@@ -34,9 +34,11 @@ To clarify, the JFrog Platform chart supports one of two options:
 2. All products work with external databases (each product can be connected to a different external database).
 
 The combination of using an external database for Artifactory and the embedded PostgreSQL for Distribution is not supported and will not be supported in the future.
-- The `artifactory.artifactory.replicator` has been removed from the Helm chart since March or April 2024.
+- The `artifactory.artifactory.replicator` and  `artifactory.artifactory.integration`has been removed from the Helm chart since March or April 2024.
 
 So replicator is not used for Distribution.
+
+- From chart version 107.84.x, `setSecurityContext` has been renamed to `podSecurityContext`
 
 - you can leave `jfrogURL` without configuration. The platform chart should be able to connect between the products. 
 It is used for internal communication, and it is not the related to the custom base url.
@@ -44,10 +46,13 @@ It is used for internal communication, and it is not the related to the custom b
 -  Pass your own ca.crt for artifactory if needed for ssl configuration. 
 
 See prerequisite for ca.crt. [here](https://jfrog.com/help/r/jfrog-installation-setup-documentation/prerequisites-for-custom-tls-certificate) 
+and [Establish TLS and Add Certificates in Helm Installation](https://jfrog.com/help/r/jfrog-installation-setup-documentation/establish-tls-and-add-certificates-in-helm-installation)
 ```
 kubectl create secret tls my-cacert --cert=ca.crt --key=ca.private.key -n <namespace> 
 ```
 
+- [Mounting Certificates Across All Products](https://jfrog.com/help/r/jfrog-platform-getting-started-with-the-jfrog-platform-helm-chart/mounting-certificates-across-all-products)
+using `global.customCertificates`
 ---
 
 ### Here are the Steps to depoy Artifactory  using `jfrog/jfrog-platform` chart

@@ -8,8 +8,11 @@
 /values/For_Test_Setup_downsized/
 /install_artifactory_and_xray.txt
 /values/suggest_to_dynata/
-/dtcc
+/dtcc_from_paulpan
 /install_jfrog_from_platform_chart/my_gcp_deployment
 /install_jfrog_from_platform_chart/mysteps
 /install_artifactory_from_artifactory_chart/mysteps
 /install_distribution_from_distribution_chart/mysteps
+/dtcc-art-values-from-rob
+/dtcc_qa_custom_values/mysteps
+/dtcc_qa_custom_values/oracle_driver

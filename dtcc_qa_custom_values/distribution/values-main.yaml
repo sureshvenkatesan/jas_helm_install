@@ -1,0 +1,21 @@
+global:
+  imagePullSecrets:
+     - myRegistryKeySecretName              ## credential for your local registry
+  imageRegistry: releases-docker.jfrog.io   ## local private registry
+#  jfrogUrl: '{{ include "jfrog-platform.jfrogUrl" . }}'
+#  jfrogUrl: 'https://myjfrog.io'   ## Put in your LB url
+ 
+  ## Artifactory UI URL - Mandatory
+  ## Update jfrogUrlUI before running builds on Pipelines
+  ## This must be the external URL of Artifactory that any service (such as scm provider) and buildnodes
+  ## that you're using can access, for example: https://artifactory.example.com
+  ## This can also be set through the UI Administration -> Settings -> custom base url
+#  jfrogUrlUI: "https://myjfrog.io"
+  
+
+  joinKeySecretName: joinkey-secret
+  masterKeySecretName: masterkey-secret
+
+
+postgresql:
+  enabled: true
