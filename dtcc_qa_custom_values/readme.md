@@ -73,7 +73,7 @@ kubectl create secret generic artifactory-database-creds \
 --from-literal=db-password=$RT_DATABASE_PASSWORD \
 --from-literal=db-url=jdbc:oracle:thin:@$DB_SERVER:1521:$ARTIFACTORY_DB -n $MY_NAMESPACE
 ```
-Example 
+As per  https://www.oracle.com/database/technologies/appdev/jdbc-downloads.html  , get all new and older versions of Oracle JDBC drivers from Maven Central Repository  i.e  https://repo1.maven.org/maven2/com/oracle/database/jdbc/ojdbc8/ . For example: [ojdbc8-19.16.0.0.jar](https://repo1.maven.org/maven2/com/oracle/database/jdbc/ojdbc8/19.16.0.0/ojdbc8-19.16.0.0.jar) or [ojdbc8-19.24.0.0.jar](https://repo1.maven.org/maven2/com/oracle/database/jdbc/ojdbc8/19.24.0.0/ojdbc8-19.24.0.0.jar) i.e the latest in the 19.x series as of Aug 2024. 
 
 d) Admin user password:
 ```
