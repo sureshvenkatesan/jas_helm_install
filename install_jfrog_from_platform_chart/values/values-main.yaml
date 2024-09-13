@@ -1,0 +1,72 @@
+# If this is an upgrade over an existing platform chart(>= 10.0.0), explicitly pass 'gaUpgradeReady=true' to upgrade
+# The purpose of "gaUpgradeReady" is not related to regular upgrades protection, it's related to the release of jfrog
+# platform chart to GA a while ago. I don't think you should use it.
+
+#gaUpgradeReady: false
+
+global:
+  # imagePullSecrets:
+  #    - myRegistryKeySecretName              ## credential for your local registry
+  imageRegistry: releases-docker.jfrog.io   ## local private registry
+#  jfrogUrl: '{{ include "jfrog-platform.jfrogUrl" . }}'
+#  jfrogUrl: 'https://myjfrog.io'   ## Put in your LB url
+ 
+  ## Artifactory UI URL - Mandatory
+  ## Update jfrogUrlUI before running builds on Pipelines
+  ## This must be the external URL of Artifactory that any service (such as scm provider) and buildnodes
+  ## that you're using can access, for example: https://artifactory.example.com
+  ## This can also be set through the UI Administration -> Settings -> custom base url
+#  jfrogUrlUI: "https://myjfrog.io"
+  
+
+  joinKeySecretName: joinkey-secret
+  masterKeySecretName: masterkey-secret
+
+  ## Chart.AppVersion for each product can be overidden using global.versions.<product>
+  ## For example : For artifactory, using global.versions.artifactory
+  ## Note: Order of preference is 1) global.versions 2) .Values.artifactory.image.tag 3) Chart.AppVersion
+  versions:
+#    artifactory: 7.84.14
+#    xray: 3.76.7
+
+  database:
+  # If you are using external postgresql, set initDBCreation: false
+    initDBCreation: false
+
+## This Postgresql is used by all products , set postgresql.enabled: false, when you want to use external postgresql for all products
+postgresql:
+  enabled: false
+
+artifactory:
+  enabled: true
+
+## This Rabbitmq is used by Xray and Pipelines only, set rabbitmq.enabled: false, when Xray or Pipelines is not enabled
+rabbitmq:
+  enabled: false
+  
+## This Redis is used by pipelines only, set redis.enabled: false, when pipelines is not enabled
+redis:
+  enabled: false
+
+xray:
+  enabled: false
+
+distribution:
+  enabled: true
+  postgresql:
+    enabled: true
+  # distribution:
+  #   unifiedSecretInstallation: true
+  # database:
+  #   url: '{{ include "database.url" . }}'
+  #   user: distribution
+  #   password: distribution
+
+insight:
+  enabled: false
+
+pipelines:
+  enabled: false
+
+pdnServer:
+  enabled: false

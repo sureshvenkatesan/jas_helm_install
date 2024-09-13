@@ -1,0 +1,28 @@
+kind: Secret
+apiVersion: v1
+metadata:
+  name: custom-binarystore
+  labels:
+    app: artifactory
+    chart: artifactory
+stringData:
+  binarystore.xml: |-
+    <?xml version="1.0" encoding="UTF-8"?>
+    <config version="2">
+      <chain template="s3-storage-v3-direct" />
+        <provider id="s3-storage-v3" type="s3-storage-v3">
+          <testConnection>true</testConnection>
+          <region>eu-west-1</region>
+          <bucketName>dynata-jfrog-artifactory-dev</bucketName>
+          <path>artifactory</path>
+          <endpoint>s3.us-east-1.amazonaws.com</endpoint>
+          <useInstanceCredentials>true</useInstanceCredentials>
+          <usePresigning>false</usePresigning>
+          <maxConnections>200</maxConnections>
+          <connectionTimeout>120000</connectionTimeout>
+          <socketTimeout>240000</socketTimeout>
+          <useHttp>false</useHttp>
+        </provider>
+    </config>
+#          <signatureExpirySeconds>300</signatureExpirySeconds>
+#          <server-side-encryption-aws-kms>kms-key-id</server-side-encryption-aws-kms>0

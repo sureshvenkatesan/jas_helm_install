@@ -1,0 +1,35 @@
+{
+  "vhosts": [
+    {
+      "name": "xray"
+    }
+  ],
+  "users": [
+    {
+      "name": "admin",
+      "password": "Test@123",
+      "tags": "administrator"
+    }
+  ],
+  "permissions": [
+    {
+      "user": "admin",
+      "vhost": "xray",
+      "configure": ".*",
+      "write": ".*",
+      "read": ".*"
+    }
+  ],
+  "policies": [
+    {
+      "name": "ha-all",
+      "apply-to": "all",
+      "pattern": ".*",
+      "vhost": "xray",
+      "definition": {
+        "ha-mode": "all",
+        "ha-sync-mode": "automatic"
+      }
+    }
+  ]
+}

@@ -1,0 +1,25 @@
+configVersion: 1
+router:
+  serviceRegistry:
+    insecure: false
+shared:
+  logging:
+    consoleLog:
+      enabled: false
+  jfrogUrl: "http://jfrog-platform-artifactory:8082"
+  database:
+    type: postgresql
+    driver: org.postgresql.Driver
+  rabbitMq:
+    erlangCookie:
+      value: "secretcookie"
+    url: "amqp://jfrog-platform-rabbitmq:5672"
+    username: "admin"
+    password: "clear_text_admin_password_for_rabbitmq"
+contextualAnalysis:
+  registry: releases-docker.jfrog.io
+  image: jfrog/xray-jas-contextual-analysis
+exposures:
+  container:
+    registry: releases-docker.jfrog.io
+    image: jfrog/xray-jas-exposures

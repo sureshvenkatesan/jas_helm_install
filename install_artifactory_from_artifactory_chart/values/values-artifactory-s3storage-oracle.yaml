@@ -1,0 +1,141 @@
+
+jfconnect:
+  enabled: false
+mc:
+  enabled: true
+ingress:
+  enabled: false
+router:
+  tlsEnabled: true
+access:
+  enabled: true
+  ## Enable TLS by changing the tls entry (under the security section) in the access.config.yaml file.
+  ## ref: https://www.jfrog.com/confluence/display/JFROG/Managing+TLS+Certificates#ManagingTLSCertificates
+  ## When security.tls is set to true, JFrog Access will act as the Certificate Authority (CA) and sign the TLS certificates used by all the different JFrog Platform nodes.
+  ## This ensures that the node to node communication is done over TLS.    
+  accessConfig:
+    security:
+      tls: true
+  ## When resetAccessCAKeys is true, Access will regenerate the CA certificate and matching private key
+  resetAccessCAKeys: true
+
+# Nginx
+nginx:
+  enabled: true
+  labels: {}
+  service:
+    ## For minikube, set this to NodePort, elsewhere use LoadBalancer
+    type: LoadBalancer
+    ssloffload: false
+    ## For supporting whitelist on the Nginx LoadBalancer service
+    ## Set this to a list of IP CIDR ranges
+    ## Example: loadBalancerSourceRanges: ['10.10.10.5/32', '10.11.10.5/32']
+    ## or pass from helm command line
+    ## Example: helm install ... --set nginx.service.loadBalancerSourceRanges='{10.10.10.5/32,10.11.10.5/32}'
+    loadBalancerSourceRanges: []
+    ## Assuming ssl terminiation at load balancer
+    ## For example, on Eks , add annoation like 
+    ## service.beta.kubernetes.io/aws-load-balancer-ssl-cert: arn:aws:acm:...
+    ## service.beta.kubernetes.io/aws-load-balancer-backend-protocol: http
+    annotations: {}
+    ## Provide static ip address
+    loadBalancerIP:
+
+# chose your selector/affinities/toleration strategy based on actual need 
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+
+
+postgresql:
+  enabled: false
+
+database:
+  ## To run Artifactory with any database other than PostgreSQL allowNonPostgresql set to true
+  ## as per https://jfrog.com/help/r/jfrog-installation-setup-documentation/choose-the-right-database
+  allowNonPostgresql: true
+  ## Oracle jdbc driver as per https://jfrog.com/help/r/jfrog-installation-setup-documentation/use-an-external-database-with-artifactory-helm-installation
+  type: "oracle"
+  driver: "oracle.jdbc.OracleDriver"
+  ## If you set the url, leave host and port empty
+  # url:
+  ## If you would like this chart to create the secret containing the db
+  ## password, use these values
+  # user:
+  # password:
+  ## If you have existing Kubernetes secrets containing db credentials, use
+  ## these values
+  secrets:
+    user:
+      name: artifactory-database-creds
+      key: db-user
+    password:
+      name: artifactory-database-creds
+      key: db-password
+    url:
+      name: artifactory-database-creds
+      key: db-url
+artifactory:
+  name: artifactory
+  ## Oracle jdbc driver mounted as per https://jfrog.com/help/r/jfrog-installation-setup-documentation/use-an-external-database-with-artifactory-helm-installation
+  preStartCommand: "mkdir -p /opt/jfrog/artifactory/var/bootstrap/artifactory/tomcat/lib; cd /opt/jfrog/artifactory/var/bootstrap/artifactory/tomcat/lib && curl https://download.oracle.com/otn_software/linux/instantclient/19600/instantclient-basic-linux.x64-19.6.0.0.0dbru.zip -o instantclient-basic-linux.x64-19.6.0.0.0dbru.zip && unzip instantclient-basic-linux.x64-19.6.0.0.0dbru.zip && cp instantclient_19_6/ojdbc8.jar . && rm -rf instantclient-basic-linux.x64-19.6.0.0.0dbru.zip instantclient_19_6" 
+  extraEnvironmentVariables:
+  - name: LD_LIBRARY_PATH
+    value: /opt/jfrog/artifactory/var/bootstrap/artifactory/tomcat/lib
+  admin:
+    # username: "admin"
+    # password: # choose your default password. Can be pass as secret
+    secret: art-creds
+    dataKey: bootstrap.creds
+  ## Artifactory license.
+  license:
+    secret: artifactory-license
+    dataKey: artifactory.lic
+
+  service:
+    name: artifactory
+  # replicaCount: 1  # This is configured in  https://github.com/jfrog/charts/blob/master/stable/artifactory/sizing/artifactory-xsmall.yaml
+
+
+
+  persistence:
+    enabled: true
+    # accessMode: ReadWriteOnce
+    ## Use a custom Secret to be mounted as your binarystore.xml
+    ## NOTE: This will ignore all settings below that make up binarystore.xml    
+    customBinarystoreXmlSecret: custom-binarystore
+
+    # type: google-storage-v2-direct
+    # https://github.com/jfrog/charts/blob/master/stable/artifactory/values.yaml#L372
+    # Files to copy to ARTIFACTORY_HOME/ on each Artifactory startup
+    # Note : From 107.46.x chart versions, copyOnEveryStartup is not needed for binarystore.xml, it is always copied via initContainers
+    # googleStorage:
+    #   gcpServiceAccount:
+    #     enabled: true
+    #     # IMPORTANT: The file must be called "gcp.credentials.json" because this is used later as the secret key!
+    #     customSecretName: artifactory-gcp-creds
+
+      # endpoint: commondatastorage.googleapis.com
+      # httpsOnly: false
+      # # Set a unique bucket name
+      # bucketName: "artifactory-gcp"
+      # ## GCP Bucket Authentication with Identity and Credential is deprecated.
+      # ## identity:
+      # ## credential:
+      # path: "artifactory/filestore"
+      # bucketExists: false
+      # useInstanceCredentials: false
+      # enableSignedUrlRedirect: false
+    
+    # type: s3-storage-v3-direct
+    # awsS3V3:
+    #   testConnection: false
+    #   identity:
+    #   credential:
+    #   region:
+    #   bucketName: artifactory-aws
+    #   path: artifactory/filestore
+    #   endpoint:
+    #   port:
+    #   maxConnections: 150
+  

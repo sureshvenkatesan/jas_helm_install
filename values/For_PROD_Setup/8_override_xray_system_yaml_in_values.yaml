@@ -1,0 +1,4 @@
+xray:
+  systemYamlOverride:
+    existingSecret: xray-custom-systemyaml
+    dataKey: system.yaml

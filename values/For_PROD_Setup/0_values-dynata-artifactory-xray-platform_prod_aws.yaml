@@ -1,0 +1,138 @@
+# If this is an upgrade over an existing platform chart(>= 10.0.0), explicitly pass 'gaUpgradeReady=true' to upgrade
+gaUpgradeReady: false
+
+global:
+  imageRegistry: releases-docker.jfrog.io
+  jfrogUrl: '{{ include "jfrog-platform.jfrogUrl" . }}'
+  # seems to match the external FQDN
+  # jfrogUrlUI: https://artifactory-stage.example.com 
+
+  joinKeySecretName: joinkey-secret
+  masterKeySecretName: masterkey-secret
+  versions:
+    artifactory: 7.59.11
+    xray: 3.76.7
+# For external DB
+  database:
+    # If you are using external postgresql, set initDBCreation: false
+    initDBCreation: false
+## This Postgresql is used by all products , set postgresql.enabled: false, when you want to use external postgresql for all products
+postgresql:
+  enabled: false
+
+artifactory:
+  enabled: true
+  probes:
+    timeoutSeconds: 15
+  mc:
+    enabled: true
+  jfconnect:
+    enabled: true
+  nginx:
+    enabled: false
+  systemYamlOverride:
+    existingSecret: artifactory-custom-systemyaml
+    dataKey: system.yaml
+  serviceAccount:
+    create: true
+    annotations:
+      eks.amazonaws.com/role-arn: arn:aws:iam::346894814804:role/JFrogArtifactoryS3AccessRole
+    automountServiceAccountToken: true
+  database:
+    type: postgresql
+    driver: org.postgresql.Driver
+#    url: jdbc:postgresql://jfrog-nonprod.c7ptfmckq2gt.us-east-1.rds.amazonaws.com:5432/artifactory
+#    user: artifactory
+#    password: <PASSWORD>
+
+  artifactory:
+    # For external DB
+    postgresql:
+      enabled: false
+    waitForDatabase: false
+    
+    admin:
+#      username: artifactoryadmin
+#      password: <PASSWORD>
+
+    license:
+      secret: artifactory-license
+      dataKey: artifactory.lic
+
+    replicaCount: 1
+
+    resources:
+      requests:
+        memory: "4Gi"
+        cpu: "2"
+      limits:
+        memory: "6Gi"
+        cpu: "4"
+    javaOpts:
+      xms: "4g"
+      xmx: "4g"  
+
+
+
+    persistence: 
+      enabled: true
+      customBinarystoreXmlSecret: custom-binarystore
+
+
+  # Run every Artifactory service to its own container
+  # splitServicesToContainers: true
+
+    # openMetrics:
+    #   enabled: true
+    #   filebeat:
+    #     enabled: true
+    #     elasticsearch:
+    #       username: admin
+    #       password: admin
+    #       url: http://insight:8082/elasticsearch
+    # consoleLog: true
+
+
+
+
+# If enabling Xray, rabbitmq should also be enabled
+rabbitmq:
+  enabled: false
+  replicaCount: 1
+  rabbitmqUpgradeReady: true
+  migration:
+    enabled: false
+  ## podSecurityContext Was Needed if you are installing only Artifactory and no xray.
+#  podSecurityContext:
+#    enabled: false
+
+
+
+xray:
+  enabled: false
+  replicaCount: 1
+  unifiedUpgradeAllowed: true
+  postgresql:
+    enabled: false
+  database:
+    type: postgresql
+    driver: org.postgresql.Driver
+#    url: postgres://jfrog-nonprod.c7ptfmckq2gt.us-east-1.rds.amazonaws.com:5432/xray?sslmode=disable
+#    user: xray
+#    password: <PASSWORD>
+
+
+distribution:
+  enabled: false
+
+insight:
+  enabled: false
+
+pipelines:
+  enabled: false
+
+redis:
+  enabled: false
+
+pdnServer:
+  enabled: false

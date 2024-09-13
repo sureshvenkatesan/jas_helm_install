@@ -1,0 +1,260 @@
+global:
+  imagePullSecrets:
+  - myRegistryKeySecretName                 ## credential for your local registry
+  imageRegistry: releases-docker.jfrog.io   ## local private registry
+#  jfrogUrl: '{{ include "jfrog-platform.jfrogUrl" . }}'
+#  jfrogUrl: 'https://myjfrog.io'   ## Put in your LB url
+  ## Artifactory UI URL - Mandatory
+  ## Update jfrogUrlUI before running builds on Pipelines
+  ## This must be the external URL of Artifactory that any service (such as scm provider) and buildnodes
+  ## that you're using can access, for example: https://artifactory.example.com
+  ## This can also be set through the UI Administration -> Settings -> custom base url
+#  jfrogUrlUI: "https://myjfrog.io"
+
+  joinKeySecretName: joinkey-secret
+  masterKeySecretName: masterkey-secret
+
+jfconnect:
+  enabled: false
+  resources:
+    requests:
+      cpu: 50m
+      memory: 100Mi
+    limits:
+      # cpu: 500m
+      memory: 250Mi
+
+mc:
+  enabled: true
+ingress:
+  enabled: false
+router:
+  tlsEnabled: false
+  resources:
+    requests:
+      cpu: 200m
+      memory: 400Mi
+    limits:
+      # cpu: "4"
+      memory: 1Gi
+
+access:
+  enabled: true
+  accessConfig:
+    security:
+      tls: false
+  ## When resetAccessCAKeys is true, Access will regenerate the CA certificate and matching private key
+  ## Once the Helm upgrade is completed, set resetAccessCAKeys  to false for 
+  # subsequent upgrades (to avoid resetting the access certificates on every Helm upgrade)
+
+  # resetAccessCAKeys: true
+  # customCertificatesSecretName: <tls-secret-name>
+
+
+# Nginx
+  resources:
+    requests:
+      cpu: 1
+      memory: 1.5Gi
+    limits:
+      # cpu: 1
+      memory: 2Gi
+
+  tomcat:
+    connector:
+      maxThreads: 125
+  javaOpts:
+    other: >
+      -XX:InitialRAMPercentage=20
+      -XX:MaxRAMPercentage=60
+  database:
+    maxOpenConnections: 100
+
+nginx:
+  enabled: true
+  labels: {}
+  service:
+    ## For minikube, set this to NodePort, elsewhere use LoadBalancer
+    type: LoadBalancer
+    ssloffload: false
+    ## For supporting whitelist on the Nginx LoadBalancer service
+    ## Set this to a list of IP CIDR ranges
+    ## Example: loadBalancerSourceRanges: ['10.10.10.5/32', '10.11.10.5/32']
+    ## or pass from helm command line
+    ## Example: helm install ... --set nginx.service.loadBalancerSourceRanges='{10.10.10.5/32,10.11.10.5/32}'
+    loadBalancerSourceRanges: []
+    ## Assuming ssl terminiation at load balancer
+    ## For example, on Eks , add annoation like 
+    ## service.beta.kubernetes.io/aws-load-balancer-ssl-cert: arn:aws:acm:...
+    ## service.beta.kubernetes.io/aws-load-balancer-backend-protocol: http
+    annotations: {}
+    ## Provide static ip address
+    loadBalancerIP:
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+  replicaCount: 2
+  disableProxyBuffering: true
+  resources:
+    requests:
+      cpu: '1'
+      memory: 500Mi
+    limits:
+      # cpu: "4"
+      memory: 1Gi
+
+postgresql:
+  enabled: false
+  postgresqlExtendedConf:
+    maxConnections: '600'
+  primary:
+    affinity:
+      # Require PostgreSQL pod to run on a different node than Artifactory pods
+      podAntiAffinity:
+        requiredDuringSchedulingIgnoredDuringExecution:
+        - labelSelector:
+            matchExpressions:
+            - key: app
+              operator: In
+              values:
+              - artifactory
+          topologyKey: kubernetes.io/hostname
+  resources:
+    requests:
+      memory: 64Gi
+      cpu: '16'
+    limits:
+      memory: 64Gi
+      # cpu: "32"
+database:
+  ## To run Artifactory with any database other than PostgreSQL allowNonPostgresql set to true
+  ## as per https://jfrog.com/help/r/jfrog-installation-setup-documentation/choose-the-right-database
+  allowNonPostgresql: true
+  ## Oracle jdbc driver as per https://jfrog.com/help/r/jfrog-installation-setup-documentation/use-an-external-database-with-artifactory-helm-installation
+  type: oracle
+  driver: oracle.jdbc.OracleDriver
+  ## If you set the url, leave host and port empty
+  # url:
+  ## If you would like this chart to create the secret containing the db
+  ## password, use these values
+  # user:
+  # password:
+  ## If you have existing Kubernetes secrets containing db credentials, use
+  ## these values
+  secrets:
+    user:
+      name: artifactory-database-creds
+      key: db-user
+    password:
+      name: artifactory-database-creds
+      key: db-password
+    url:
+      name: artifactory-database-creds
+      key: db-url
+
+artifactory:
+  name: artifactory
+  preStartCommand: mkdir -p /opt/jfrog/artifactory/var/bootstrap/artifactory/tomcat/lib;
+    cd /opt/jfrog/artifactory/var/bootstrap/artifactory/tomcat/lib && curl https://repo1.maven.org/maven2/com/oracle/database/jdbc/ojdbc8/19.24.0.0/ojdbc8-19.24.0.0.jar
+    -o ojdbc8-19.24.0.0.jar
+  extraEnvironmentVariables:
+  - name: MALLOC_ARENA_MAX
+    value: '8'
+  - name: JF_SHARED_NODE_HAENABLED
+    value: 'true'
+  - name: SKIP_WAIT_FOR_EXTERNAL_DB
+    value: 'true'
+
+  admin:
+    # username: "admin"
+    # password: # choose your default password. Can be pass as secret
+    secret: art-creds
+    dataKey: bootstrap.creds
+  ## Artifactory license.
+  license:
+    secret: artifactory-license
+    dataKey: artifactory.lic
+
+  service:
+    name: artifactory
+
+  persistence:
+    enabled: true
+    #accessMode: ReadWriteOnce
+    size: 600Gi
+    type: file-system
+
+
+  replicaCount: 2
+  podAntiAffinity:
+    type: hard
+
+  resources:
+    requests:
+      cpu: '2'
+      memory: 10Gi
+    limits:
+      # cpu: "14"
+      memory: 12Gi
+
+  javaOpts:
+    other: >
+      -XX:InitialRAMPercentage=40
+      -XX:MaxRAMPercentage=65
+      -Dartifactory.async.corePoolSize=80
+      -Dartifactory.async.poolMaxQueueSize=20000
+      -Dartifactory.http.client.max.total.connections=100
+      -Dartifactory.http.client.max.connections.per.route=100
+      -Dartifactory.access.client.max.connections=125
+      -Dartifactory.metadata.event.operator.threads=4
+      -XX:MaxMetaspaceSize=512m
+      -Djdk.nio.maxCachedBufferSize=524288
+      -XX:MaxDirectMemorySize=512m
+  tomcat:
+    connector:
+      maxThreads: 500
+      extraConfig: acceptCount="800" acceptorThreadCount="2" compression="off" connectionLinger="-1"
+        connectionTimeout="120000" enableLookups="false"
+
+  database:
+    maxOpenConnections: 100
+
+splitServicesToContainers: true
+frontend:
+  resources:
+    requests:
+      cpu: 200m
+      memory: 300Mi
+    limits:
+      # cpu: "3"
+      memory: 1Gi
+
+metadata:
+  resources:
+    requests:
+      cpu: 200m
+      memory: 200Mi
+    limits:
+      # cpu: "4"
+      memory: 1Gi
+
+  database:
+    maxOpenConnections: 100
+event:
+  resources:
+    requests:
+      cpu: 100m
+      memory: 50Mi
+    limits:
+      # cpu: 500m
+      memory: 250Mi
+
+observability:
+  resources:
+    requests:
+      cpu: 100m
+      memory: 50Mi
+    limits:
+      # cpu: 500m
+      memory: 250Mi
+

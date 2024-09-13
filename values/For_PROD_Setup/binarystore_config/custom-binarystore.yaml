@@ -1,0 +1,29 @@
+kind: Secret
+apiVersion: v1
+metadata:
+  name: custom-binarystore
+  namespace: ps-jfrog-platform
+  labels:
+    app: artifactory
+    chart: artifactory
+stringData:
+  binarystore.xml: |-
+    <config version="2">
+      <chain template="google-storage-v2-direct"/>
+          <provider id="cache-fs" type="cache-fs">
+            <maxCacheSize>500000000000</maxCacheSize>
+            <!-- <cacheProviderDir>/data/jfrog/cachefs</cacheProviderDir> -->
+          </provider>
+        <provider id="google-storage-v2" type="google-storage-v2">
+          <bucketName>sivas-ha-helm-bucket</bucketName>
+          <!-- <path>artifactory/vigneshs</path> -->
+          <!-- <signatureExpirySeconds>10</signatureExpirySeconds> -->
+          <maxConnections>50</maxConnections>
+          <connectionTimeout>120000</connectionTimeout>
+          <!-- <endpoint>storage.googleapis.com</endpoint> -->
+          <endpoint>commondatastorage.googleapis.com</endpoint>
+          <testConnection>false</testConnection>
+          <bucketExists>true</bucketExists>
+          <useInstanceCredentials>false</useInstanceCredentials>
+        </provider>
+    </config>

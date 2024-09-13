@@ -1,0 +1,33 @@
+# If this is an upgrade over an existing platform chart(>= 10.0.0), explicitly pass 'gaUpgradeReady=true' to upgrade
+# The purpose of "gaUpgradeReady" is not related to regular upgrades protection, it's related to the release of jfrog
+# platform chart to GA a while ago. I don't think you should use it.
+
+#gaUpgradeReady: false
+
+global:
+  # imagePullSecrets:
+  #    - myRegistryKeySecretName              ## credential for your local registry
+#  imageRegistry: releases-docker.jfrog.io   ## local private registry
+#  jfrogUrl: '{{ include "jfrog-platform.jfrogUrl" . }}'
+#  jfrogUrl: 'https://myjfrog.io'   ## Put in your LB url
+ 
+  ## Artifactory UI URL - Mandatory
+  ## Update jfrogUrlUI before running builds on Pipelines
+  ## This must be the external URL of Artifactory that any service (such as scm provider) and buildnodes
+  ## that you're using can access, for example: https://artifactory.example.com
+  ## This can also be set through the UI Administration -> Settings -> custom base url
+#  jfrogUrlUI: "https://myjfrog.io"
+
+ # If you have your artifactory image in your registry then set  global.imageRegistry:""
+ # https://jfrog.slack.com/archives/CD30SKMDG/p1684390983290339?thread_ts=1684390752.563369&cid=CD30SKMDG
+  imageRegistry: ""
+  joinKeySecretName: joinkey-secret
+  masterKeySecretName: masterkey-secret
+
+  ## Chart.AppVersion for each product can be overidden using global.versions.<product>
+  ## For example : For artifactory, using global.versions.artifactory
+  ## Note: Order of preference is 1) global.versions 2) .Values.artifactory.image.tag 3) Chart.AppVersion
+  # versions:
+  #   artifactory: 7.84.14
+  #   xray: 3.76.7
+

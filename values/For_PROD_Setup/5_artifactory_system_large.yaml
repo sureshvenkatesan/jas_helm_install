@@ -1,0 +1,59 @@
+router:
+  serviceRegistry:
+    insecure: false
+shared:
+  node:
+    haEnabled: true
+    taskAffinity: any
+  logging:
+    consoleLog:
+      enabled: false
+  extraJavaOpts: >
+    -Dartifactory.graceful.shutdown.max.request.duration.millis=30000
+    -Dartifactory.access.client.max.connections=150
+    -Xms6g
+    -Xmx8g
+
+  database:
+    type: "postgresql"
+    driver: "org.postgresql.Driver"
+access:
+  database:
+    maxOpenConnections: 300
+  tomcat:
+    connector:
+      maxThreads: 150
+      sendReasonPhrase: false
+      extraConfig: acceptCount="100"
+
+artifactory:
+  database:
+    maxOpenConnections: 300
+  tomcat:
+    maintenanceConnector:
+      port: 8091
+    connector:
+      maxThreads: 600
+      sendReasonPhrase: false
+      extraConfig: acceptCount="100"
+frontend:
+  session:
+    # https://jfrog.com/knowledge-base/how-to-set-an-artifactory-ui-session-timeout/
+    timeMinutes: "30"
+
+mc:
+  enabled: true
+  database:
+    maxOpenConnections: 10
+  idgenerator:
+    maxOpenConnections: 2
+  tomcat:
+    connector:
+      maxThreads: 50
+      sendReasonPhrase: false
+      extraConfig: acceptCount="100"
+metadata:
+  database:
+    maxOpenConnections: 300
+jfconnect:
+  enabled: true

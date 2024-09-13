@@ -1,0 +1,24 @@
+xray:
+  #required block for JAS
+  serviceAccount:
+    create: true
+  rbac:
+    create: true
+  #End of required block for JAS
+  common:
+    extraEnvVars: |
+      - name: "JF_SHARED_RABBITMQ_VHOST"
+        value: "xray"
+      - name: XRAY_CHART_FULL_NAME
+        value: '{{ include "xray.fullname" . }}'
+      - name: XRAY_CHART_NAME
+        value: '{{ include "xray.name" . }}'
+      - name: XRAY_CHART_UNIFIED_SECRET_INSTALLATION
+        value: "{{ .Values.xray.unifiedSecretInstallation }}"
+      - name: XRAY_CHART_SYSTEM_YAML_OVERRIDE_EXISTING_SECRET
+        value: "{{ .Values.systemYamlOverride.existingSecret }}"
+      - name: XRAY_CHART_SYSTEM_YAML_OVERRIDE_DATA_KEY
+        value: "{{ .Values.systemYamlOverride.dataKey }}"
+
+    rabbitmq:
+      connectionConfigFromEnvironment: false

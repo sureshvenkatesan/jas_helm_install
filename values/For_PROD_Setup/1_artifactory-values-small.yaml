@@ -1,0 +1,14 @@
+#https://github.com/jfrog/charts/blob/master/stable/artifactory/values-small.yaml
+artifactory:
+  artifactory:
+    replicaCount: 2
+    resources:
+      requests:
+        memory: "4Gi"
+        cpu: "2"
+      limits:
+        memory: "6Gi"
+        cpu: "4"
+    javaOpts:
+      xms: "4g"
+      xmx: "4g"

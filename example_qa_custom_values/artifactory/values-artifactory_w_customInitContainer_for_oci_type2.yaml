@@ -1,0 +1,164 @@
+shared:
+  env:
+    LD_LIBRARY_PATH: /opt/jfrog/artifactory/var/bootstrap/artifactory/tomcat/lib
+metadata:
+  extraEnvironmentVariables:
+    - name: LD_LIBRARY_PATH
+      value: /opt/jfrog/artifactory/var/bootstrap/artifactory/tomcat/lib
+
+jfconnect:
+  enabled: false
+mc:
+  enabled: true
+ingress:
+  enabled: false
+router:
+  tlsEnabled: false
+access:
+  enabled: true
+  ## Enable TLS by changing the tls entry (under the security section) in the access.config.yaml file.
+  ## ref: https://www.jfrog.com/confluence/display/JFROG/Managing+TLS+Certificates#ManagingTLSCertificates
+  ## When security.tls is set to true, JFrog Access will act as the Certificate Authority (CA) and sign the TLS certificates used by all the different JFrog Platform nodes.
+  ## This ensures that the node to node communication is done over TLS.
+  ## ref: https://jfrog.com/help/r/jfrog-installation-setup-documentation/establish-tls-and-add-certificates-in-helm-installation    
+  accessConfig:
+    security:
+      tls: false
+  ## When resetAccessCAKeys is true, Access will regenerate the CA certificate and matching private key
+  ## Once the Helm upgrade is completed, set resetAccessCAKeys  to false for 
+  # subsequent upgrades (to avoid resetting the access certificates on every Helm upgrade)
+
+  # resetAccessCAKeys: true
+  # customCertificatesSecretName: <tls-secret-name>
+
+
+# Nginx
+nginx:
+  enabled: true
+  labels: {}
+  service:
+    ## For minikube, set this to NodePort, elsewhere use LoadBalancer
+    type: LoadBalancer
+    ssloffload: false
+    ## For supporting whitelist on the Nginx LoadBalancer service
+    ## Set this to a list of IP CIDR ranges
+    ## Example: loadBalancerSourceRanges: ['10.10.10.5/32', '10.11.10.5/32']
+    ## or pass from helm command line
+    ## Example: helm install ... --set nginx.service.loadBalancerSourceRanges='{10.10.10.5/32,10.11.10.5/32}'
+    loadBalancerSourceRanges: []
+    ## Assuming ssl terminiation at load balancer
+    ## For example, on Eks , add annoation like 
+    ## service.beta.kubernetes.io/aws-load-balancer-ssl-cert: arn:aws:acm:...
+    ## service.beta.kubernetes.io/aws-load-balancer-backend-protocol: http
+    annotations: {}
+    ## Provide static ip address
+    loadBalancerIP:
+
+# chose your selector/affinities/toleration strategy based on actual need 
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+
+
+postgresql:
+  enabled: false
+
+database:
+  ## To run Artifactory with any database other than PostgreSQL allowNonPostgresql set to true
+  ## as per https://jfrog.com/help/r/jfrog-installation-setup-documentation/choose-the-right-database
+  allowNonPostgresql: true
+  ## Oracle jdbc driver as per https://jfrog.com/help/r/jfrog-installation-setup-documentation/use-an-external-database-with-artifactory-helm-installation
+  type: "oracle"
+  driver: "oracle.jdbc.OracleDriver"
+  ## If you set the url, leave host and port empty
+  # url:
+  ## If you would like this chart to create the secret containing the db
+  ## password, use these values
+  # user:
+  # password:
+  ## If you have existing Kubernetes secrets containing db credentials, use
+  ## these values
+  secrets:
+    user:
+      name: artifactory-database-creds
+      key: db-user
+    password:
+      name: artifactory-database-creds
+      key: db-password
+    url:
+      name: artifactory-database-creds
+      key: db-url
+
+artifactory:
+  name: artifactory
+  customInitContainers: |
+    - name: "oracle-instantclient-setup"
+      image: "your-repo/custom-busybox:instantclient21.11.0.0.0"
+      imagePullPolicy: {{ .Values.initContainers.image.pullPolicy }}
+      securityContext:
+        runAsNonRoot: true
+        allowPrivilegeEscalation: false
+        capabilities:
+          drop:
+            - NET_RAW
+      command:
+        - 'sh'
+        - '-c'
+        - 'mkdir -p /opt/jfrog/artifactory/var/bootstrap/artifactory/tomcat/lib; cd /opt/jfrog/artifactory/var/bootstrap/artifactory/tomcat/lib && cp -fv /tmp/zips/instantclient-basic-linux.x64-21.11.0.0.0dbru.zip . && unzip -jn instantclient-basic-linux.x64-21.11.0.0.0dbru.zip'
+      volumeMounts:
+        - mountPath: "{{ .Values.artifactory.persistence.mountPath }}"
+          name: artifactory-volume
+
+## Oracle jdbc driver mounted as per https://jfrog.com/help/r/jfrog-installation-setup-documentation/use-an-external-database-with-artifactory-helm-installation
+
+# In https://jfrog.com/help/r/jfrog-installation-setup-documentation/configure-artifactory-to-use-oracle "Download and install the
+# libaio"is not needed as we ship "/opt/jfrog/artifactory/app/artifactory/libaio/*"
+# Do steps from https://jfrog.com/help/r/artifactory-how-to-resolve-the-oracle-db-driver-error-with-metadata-service-after-upgrading-to-version-7-55-x-and-above-in-kubernetes-with-splitservicestocontainers
+
+#  unzip -j -> -j (junk paths): This option tells unzip to ignore directory paths stored in the archive and extract all
+#    files into the current directory.
+# Following are not needed
+#     curl https://download.oracle.com/otn_software/linux/instantclient/2111000/instantclient-basic-linux.x64-21.11.0.0.0dbru.zip -o instantclient-basic-linux.x64-21.11.0.0.0dbru.zip
+#    cp instantclient_21_11/ojdbc8.jar .
+#     rm -rf instantclient-basic-linux.x64-21.11.0.0.0dbru.zip
+
+# https://jfrog.com/help/r/artifactory-how-to-work-with-custom-volumes-in-artifactory-helm-chart
+  # https://jfrog.com/help/r/xray-how-to-configure-the-extensions-that-can-be-scanned-by-file-type-in-helm-installations/create-a-configmap
+# Note: In JFrog helm values the preStartCommand with multiple commands has to be in a single line so we cannot split as multiline using "|"
+  preStartCommand: "mkdir -p /opt/jfrog/artifactory/var/bootstrap/artifactory/tomcat/lib; cd /opt/jfrog/artifactory/var/bootstrap/artifactory/tomcat/lib && cp /opt/jfrog/artifactory/app/artifactory/libaio/* ."
+
+
+  extraEnvironmentVariables:
+  - name: LD_LIBRARY_PATH
+    value: /opt/jfrog/artifactory/var/bootstrap/artifactory/tomcat/lib
+  admin:
+    # username: "admin"
+    # password: # choose your default password. Can be pass as secret
+    secret: art-creds
+    dataKey: bootstrap.creds
+  ## Artifactory license.
+  license:
+    secret: artifactory-license
+    dataKey: artifactory.lic
+
+  service:
+    name: artifactory
+
+  persistence:
+    enabled: true
+    #accessMode: ReadWriteOnce
+    size: 600Gi
+    ## https://jfrog.com/help/r/jfrog-installation-setup-documentation/cluster-file-system-example
+    ## https://github.com/jfrog/charts/blob/master/examples/artifactory/binarystore/templates/cluster-file-system.xml
+    type: cluster-file-system
+    redundancy: 2
+    lenientLimit: 1
+    ## cache-fs binary provider configurations
+    ## Refer: https://jfrog.com/help/r/jfrog-installation-setup-documentation/cache-fs-template-configuration
+    maxCacheSize: 5000000000
+    cacheProviderDir: cache
+    maxFileSizeLimit: 1000000000
+    skipDuringUpload: true
+
+
+  

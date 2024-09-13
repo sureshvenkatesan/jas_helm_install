@@ -1,0 +1,37 @@
+rabbitmq:
+  enabled: true
+  replicaCount: 1
+  # Following sets the vm_memory_high_watermark_absolute
+  memoryHighWatermark:
+    enabled: true
+    type: "absolute"
+    value: 2500MB
+  ## RabbitMQ maximum available scheduler threads and online scheduler threads. By default it will create a thread per CPU detected, with the following parameters you can tune it manually.
+  maxAvailableSchedulers: "1"
+  onlineSchedulers: "1"
+  resources:
+    requests:
+      memory: "512Mi"
+      cpu: "500m"
+    limits:
+      memory: "3Gi"
+      cpu: "3"
+  auth:
+#    username: admin
+#    password: password
+    existingPasswordSecret: rabbitmq-admin-creds
+  external:
+    secrets:
+      username:
+        name: "xray-rabbitmq-creds"
+        key: "username"
+      password:
+        name: "xray-rabbitmq-creds"
+        key: "password"
+      url:
+        name: "xray-rabbitmq-creds"
+        key: "url"
+  extraSecretsPrependReleaseName: false
+  loadDefinition:
+    enabled: true
+    existingSecret: '{{ .Release.Name }}-load-definition'

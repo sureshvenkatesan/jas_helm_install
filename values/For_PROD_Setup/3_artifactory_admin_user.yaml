@@ -1,0 +1,5 @@
+artifactory:
+  artifactory:
+    admin:
+      secret: art-creds
+      dataKey: bootstrap.creds
