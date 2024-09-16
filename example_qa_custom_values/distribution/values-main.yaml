@@ -41,4 +41,4 @@ redis:
   ## Disable containerSecurityContext for openshift https://github.com/jfrog/charts/blob/master/stable/distribution/values.yaml#L240
   #  We do not need to change any SecurityContext for pod as we use redis only as a container .
   containerSecurityContext:
-    enabled: true
+    enabled: false
