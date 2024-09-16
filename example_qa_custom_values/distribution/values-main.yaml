@@ -16,6 +16,29 @@ global:
   joinKeySecretName: joinkey-secret
   masterKeySecretName: masterkey-secret
 
+## Disable containerSecurityContext for openshift https://github.com/jfrog/charts/blob/master/stable/distribution/values.yaml#L139
+containerSecurityContext:
+  enabled: false
+
+## Disable podSecurityContext for openshift https://github.com/jfrog/charts/blob/master/stable/distribution/values.yaml#L147
+podSecurityContext:
+  enabled: false
+#  runAsNonRoot: true
+#  runAsUser: 1001360000
+#  runAsGroup: 1001360000
+#  fsGroup: 1001360000
 
 postgresql:
   enabled: true
+  ## Disable SecurityContext and containerSecurityContext for openshift https://github.com/jfrog/charts/blob/master/stable/distribution/values.yaml#L184
+#  By disabling both security contexts, the chart does not enforce any specific user or group settings, capabilities, or filesystem permissions, allowing the underlying platform (such as OpenShift) to manage these aspects based on its own security policies.
+  securityContext:
+    enabled: false
+  containerSecurityContext:
+    enabled: false
+
+redis:
+  ## Disable containerSecurityContext for openshift https://github.com/jfrog/charts/blob/master/stable/distribution/values.yaml#L240
+  #  We do not need to change any SecurityContext for pod as we use redis only as a container .
+  containerSecurityContext:
+    enabled: true
