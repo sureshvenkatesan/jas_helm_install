@@ -222,3 +222,21 @@ helm upgrade --install $MY_DIST_HELM_RELEASE \
 
 6. Next run without the --dry-run
  
+---
+
+## To fix license do the following.
+
+Get the license hash using https://jfrog.com/help/r/jfrog-rest-apis/ha-license-information 
+curl -u admin https://<jfrogurl>/artifactory/api/system/licenses
+
+
+Then delete one of the duplicate license hash  :
+https://jfrog.com/help/r/jfrog-rest-apis/delete-ha-cluster-license 
+
+curl -u admin -XDELETE https://<jfrogurl>/artifactory/api/system/licenses?licenseHash=licenseHash1, licenseHash2…
+
+
+The install new licenses using:
+https://jfrog.com/help/r/jfrog-rest-apis/install-ha-cluster-licenses
+
+
