@@ -175,9 +175,10 @@ i) Example of using `artifactory.customSidecarContainers`
 ii) If you use S3 bucket for filestore using a `“artifactory.persistence.customBinarystoreXmlSecret”` xml as in 
 [4_custom-binarystore-s3-direct-use_instance-creds.yaml](../install_artifactory_from_artifactory_chart/values/4_custom-binarystore-s3-direct-use_instance-creds.yaml)
 you will still have a automatically created  PVC for `/opt/jfrog/artifactory/var` of the artifactory pod   .
-The storageClass of this PVC is determined by `artifactory.storageClassName` and size is determined by `artifactory.
-persistence.size` 
-The cache will be part of it.     
+The storageClass of this PVC is determined by `artifactory.storageClassName` and 
+size is determined by `artifactory.persistence.size` 
+The cache will be part of it.
+     
 You still control the `cache-fs` size with `maxCacheSize` in the `“artifactory.persistence.
 customBinarystoreXmlSecret”` or the `artifactory.persistence.maxCacheSize` . But this `maxCacheSize` needs to be smaller than the `artifactory.persistence.size`
 
