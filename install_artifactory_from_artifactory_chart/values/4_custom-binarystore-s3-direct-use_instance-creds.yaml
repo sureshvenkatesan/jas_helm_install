@@ -26,3 +26,32 @@ stringData:
     </config>
 #          <signatureExpirySeconds>300</signatureExpirySeconds>
 #          <server-side-encryption-aws-kms>kms-key-id</server-side-encryption-aws-kms>0
+
+# Here is the expanded template
+#  binarystore.xml: |-
+#    <?xml version="1.0" encoding="UTF-8"?>
+#    <config version="2">
+#      <chain>
+#        <provider id="cache-fs" type="cache-fs">
+#          <provider id="s3-storage-v3" type="s3-storage-v3"/>
+#        </provider>
+#      </chain>
+#      <provider id="s3-storage-v3" type="s3-storage-v3">
+#        <endpoint>s3.amazonaws.com</endpoint>
+#        <bucketName>bucketName</bucketName>
+#        <path>pathPrefix</path>
+#        <region>s3Region</region>
+#        <identity>yourIdentity</identity>
+#        <credential>yourCredentials</credential>
+#        <usePresigning>true</usePresigning>
+#        <signatureExpirySeconds>600</signatureExpirySeconds>
+#        <maxConnections>200</maxConnections>
+#        <connectionTimeout>120000</connectionTimeout>
+#        <socketTimeout>240000</socketTimeout>
+#        <useHttp>false</useHttp>
+#      </provider>
+#      <provider type="cache-fs" id="cache-fs">
+#        <cacheProviderDir>/cache/dir</cacheProviderDir>
+#        <maxCacheSize>5000000000</maxCacheSize>
+#      </provider>
+#    </config>

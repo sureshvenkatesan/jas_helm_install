@@ -172,6 +172,28 @@ i) Example of using `artifactory.customSidecarContainers`
 - [Add Custom Sidecars Containers in Helm Installations](https://jfrog.com/help/r/jfrog-installation-setup-documentation/add-custom-sidecars-containers-in-helm-installations)
 - Example in [ARTIFACTORY: Troubleshoot Artifactory <> AWS S3 bucket connection/access related issues in Kubenates cluster deployed using Helm charts](https://jfrog.com/help/r/artifactory-troubleshoot-artifactory-aws-s3-bucket-connection-access-related-issues-in-kubenates-cluster-deployed-using-helm-charts/option-2)
 
+ii) If you use S3 bucket for filestore using a `“artifactory.persistence.customBinarystoreXmlSecret”` xml as in 
+[4_custom-binarystore-s3-direct-use_instance-creds.yaml](../install_artifactory_from_artifactory_chart/values/4_custom-binarystore-s3-direct-use_instance-creds.yaml)
+you will still have a automatically created  PVC for `/opt/jfrog/artifactory/var` of the artifactory pod   .
+The storageClass of this PVC is determined by `artifactory.storageClassName` and size is determined by `artifactory.
+persistence.size` 
+The cache will be part of it.     
+You still control the `cache-fs` size with `maxCacheSize` in the `“artifactory.persistence.
+customBinarystoreXmlSecret”` or the `artifactory.persistence.maxCacheSize` . But this `maxCacheSize` needs to be smaller than the `artifactory.persistence.size`
+
+But if you want a dedicated PVC  just for cachefs layer then use:
+```
+artifactory:
+    customVolumes: |
+      - name: "cache-fast-storage"
+        persistentVolumeClaim:
+          claimName: "cache-fast-storage-pvc"
+    customVolumeMounts: |
+      - name: "cache-fast-storage" 
+        mountPath: "/cache/dir"
+```
+Then create the PV and PVC as mentioned in https://jfrog.com/help/r/artifactory-how-to-apply-your-pre-made-pvc-s-for-each-artifactory-pod-in-a-helm-deployment
+
 
 ---
 
