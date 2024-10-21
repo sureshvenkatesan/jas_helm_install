@@ -129,6 +129,34 @@ python ../../scripts/merge_yaml_with_comments.py ../artifactory/values-main.yaml
 ../artifactory/artifactory-large-extra-config.yaml -o artifactory_mergedfile.yaml
 ```
 
+Note: All the Java Options in `artifactory.javaOpts.other: >` in `artifactory-large-extra-config.yaml` are applied as is 
+to the `shared.extraJavaOpts` in the final artifactory pod's system.yaml 
+as specified  https://github.com/jfrog/charts/blob/master/stable/artifactory/files/system.yaml#L45 i.e
+```
+  {{- if .other }}
+    {{ .other }}
+  {{- end }}
+```
+`>` treats the multi-line string as a single line, folding line breaks into spaces.
+So the following :
+```
+artifactory:
+  javaOpts:
+    other: >
+      -XX:InitialRAMPercentage=40
+      -XX:MaxRAMPercentage=65
+      -Dartifactory.async.corePoolSize=80
+      ...
+```
+becomes:
+```
+shared:
+  extraJavaOpts: >
+    -server  -Xss256k ....
+    -XX:InitialRAMPercentage=40 -XX:MaxRAMPercentage=65 -Dartifactory.async.corePoolSize=80
+    ...
+```
+
 
 6. First do a Dry run:
 ```
