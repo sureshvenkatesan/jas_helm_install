@@ -225,34 +225,40 @@ Connect to your DB from psql client at  127.0.0.1:5432 from your mac
  
 ---
 To check connection from the namespace in the K8s cluster to the external Postgres:
+
 ```
 export DB_SERVER=35.196.8.206
 export RT_DATABASE_USER=artifactory
 export RT_DATABASE_PASSWORD=password
 export ARTIFACTORY_DB=sureshv-helm-ha-db
 
-kubectl run postgresql-client --rm --tty -i --restart='Never' --namespace $MY_NAMESPACE \
---image bitnami/postgresql:latest --env="PGPASSWORD=$RT_DATABASE_PASSWORD" \
+kubectl run postgres-client --rm --tty -i --restart='Never' --namespace $MY_NAMESPACE \
+--image postgres --env="PGPASSWORD=$RT_DATABASE_PASSWORD" \
 --command -- psql --host $DB_SERVER -U $RT_DATABASE_USER -d $ARTIFACTORY_DB -c "SELECT version();"
 
-kubectl exec -it postgresql-client --namespace $MY_NAMESPACE -- sh
-psql -h <POSTGRES_HOST> -U <POSTGRES_USER> -d <POSTGRES_DB> -W
-psql -h 35.196.8.206 -U artifactory -d sureshv-helm-ha-db -W
+kubectl exec -it postgres-client --namespace $MY_NAMESPACE -- bash
+PGPASSWORD="your_password" psql -h <POSTGRES_HOST> -p 5432 -U <POSTGRES_USER> -d <POSTGRES_DB> -W
+PGPASSWORD="your_password" psql -h 35.196.8.206 -p 5432 -U artifactory -d sureshv-helm-ha-db -W
 ```
 Or
+#### Deploy an Alpine Pod
+Step 1: Deploy a Pod with Alpine
+```
+kubectl run alpine --image=alpine --restart=Never --namespace=$MY_NAMESPACE -- sleep 3600
 
+```
 .
-2. Connect to the BusyBox pod:
+Step 2: Access the Pod
 
     ```sh
-    kubectl exec -it busybox -- sh
+    kubectl exec -it alpine --namespace=$MY_NAMESPACE -- sh
     ```
 
 3. Install PostgreSQL client inside the BusyBox pod:
 
     ```sh
-    apk update
-    apk add postgresql-client
+
+    apk add --no-cache postgresql-client
     ```
 
 4. Connect to PostgreSQL database:

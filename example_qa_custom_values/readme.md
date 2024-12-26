@@ -91,8 +91,7 @@ it will fail with:
  ```
  error: failed to create configmap: Request entity too large: limit is 3145728
  ```
- So  as mentioned in [prepopulate_PV_with_file_larger_than_3MB_configmap_limit.md]
- (prepopulate_PV_with_file_larger_than_3MB_configmap_limit.md) one option for Airgap environment is to create a PV and scp the 
+ So  as mentioned in [prepopulate_PV_with_file_larger_than_3MB_configmap_limit.md](prepopulate_PV_with_file_larger_than_3MB_configmap_limit.md) one option for Airgap environment is to create a PV and scp the 
 driver zip file to that PV .
 ```
 kubectl apply -f ../artifactory/prepopulate_pv_with_custom_oracle_instantclient_type2_driver_zip.yaml -n $MY_NAMESPACE
@@ -105,7 +104,7 @@ tar cf - instantclient-basic-linux.x64-21.11.0.0.0dbru.zip | pv | kubectl exec -
 ```
 Note:
 YOu may get  error message `exec failed: unable to start container process: exec: "tar": executable file not found in 
-$PATH` which indicates that the tar command is not available in the container's environment. The oc cp (or kubectl cp) 
+$PATH` which indicates that the tar command is not available in the container's environment. The `oc cp` (or `kubectl cp`) 
 command typically relies on tar to perform the copy operation, and if the container does not have tar installed, the copy operation will fail.
 
 **Ref KBs:**

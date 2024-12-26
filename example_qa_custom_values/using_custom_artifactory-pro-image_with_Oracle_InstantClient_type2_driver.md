@@ -7,9 +7,7 @@ build a custom Artifactory Docker image that includes this driver .
 ### Proposed Solution
 
 We suggest that you create a custom  `releases-docker.jfrog.io/jfrog/artifactory-pro image`  that includes the Oracle 
-Instant 
-Client `instantclient-basic-linux.x64-21.11.
-0.0.0dbru.zip`. 
+Instant Client `instantclient-basic-linux.x64-21.11.0.0.0dbru.zip`. 
 
 ## Steps to Implement the Solution
 

@@ -114,7 +114,7 @@ artifactory:
 ## Oracle jdbc driver mounted as per https://jfrog.com/help/r/jfrog-installation-setup-documentation/use-an-external-database-with-artifactory-helm-installation
 
 # In https://jfrog.com/help/r/jfrog-installation-setup-documentation/configure-artifactory-to-use-oracle "Download and install the
-# libaio"is not needed as we ship "/opt/jfrog/artifactory/app/artifactory/libaio/*"
+# libaio " is not needed as we ship "/opt/jfrog/artifactory/app/artifactory/libaio/*"
 # Do steps from https://jfrog.com/help/r/artifactory-how-to-resolve-the-oracle-db-driver-error-with-metadata-service-after-upgrading-to-version-7-55-x-and-above-in-kubernetes-with-splitservicestocontainers
 
 #  unzip -j -> -j (junk paths): This option tells unzip to ignore directory paths stored in the archive and extract all
