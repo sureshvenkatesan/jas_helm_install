@@ -95,7 +95,7 @@ kubectl apply -f copy-pod.yaml
 Instead I have all in a single [prepopulate_pv_with_custom_oracle_instantclient_type2_driver_zip.yaml](prepopulate_pv_with_custom_oracle_instantclient_type2_driver_zip.yaml)
 
 ```bash
-kubectl apply -f prepopulate_pv_with_custom_oracle_instantclient_type2_driver_zip.yaml -n $MY_NAMESPACE
+kubectl apply -f ../artifactory/prepopulate_pv_with_custom_oracle_instantclient_type2_driver_zip.yaml -n $MY_NAMESPACE
 ```
 
 ### 3. Copy the File from Your Mac to the Pod
@@ -140,7 +140,7 @@ Or
 Just use
 ```bash
 # Copy the file to the pod
-kubectl cp instantclient-basic-linux.x64-21.11.0.0.0dbru.zip copy-pod:/mnt/data/
+kubectl cp instantclient-basic-linux.x64-21.11.0.0.0dbru.zip copy-pod:/mnt/data/ -n $MY_NAMESPACE
 ```
 
 Verify the file was copied successfully:
@@ -148,6 +148,10 @@ Verify the file was copied successfully:
 ```bash
 kubectl exec -it copy-pod -n $MY_NAMESPACE -- ls /mnt/data/
 ```
+**Note:**
+You may get  error message `exec failed: unable to start container process: exec: "tar": executable file not found in 
+$PATH` which indicates that the tar command is not available in the container's environment. The `oc cp` ( the openshift copy command) or `kubectl cp` 
+command typically relies on tar to perform the copy operation, and if the container does not have tar installed, the copy operation will fail.
 
 ### 4. Mount the PV in Your Artifactory Deployment
 
@@ -187,3 +191,22 @@ kubectl delete pod copy-pod
 
 By following these steps, you can prepopulate a Persistent Volume with a file from your Mac and use it across all replicas in a JFrog Artifactory deployment. This approach ensures that the file is available to all pods without requiring manual intervention when scaling the deployment.
 
+---
+
+### **References**
+
+As per  https://www.oracle.com/database/technologies/appdev/jdbc-downloads.html  , the new and older versions of Oracle JDBC drivers are available in Maven Central Repository  i.e  https://repo1.maven.org/maven2/com/oracle/database/jdbc/ojdbc8/ . For example: [ojdbc8-19.16.0.0.jar](https://repo1.maven.org/maven2/com/oracle/database/jdbc/ojdbc8/19.16.0.0/ojdbc8-19.16.0.0.jar) or [ojdbc8-19.24.0.0.jar](https://repo1.maven.org/maven2/com/oracle/database/jdbc/ojdbc8/19.24.0.0/ojdbc8-19.24.0.0.jar) i.e the latest in the 19.x series as of Aug 2024. 
+
+For Artifactory setup with Oracle we need the   [Oracle Instant Client](https://www.oracle.com/database/technologies/instant-client/downloads.html) Type 2 driver.
+
+If a file is smaller than the K8s `configmap` limit of `3 MB` you can make it available to a pod in the K8s cluster using :  
+```
+kubectl  create configmap oci_type2_zip \                         
+   --from-file=instantclient-basic-linux.x64-21.11.0.0.0dbru.zip=instantclient-basic-linux.x64-21.11.0.0.0dbru.zip \
+   -n $MY_NAMESPACE
+```
+But the   [Oracle Instant Client](https://www.oracle.com/database/technologies/instant-client/downloads.html) Type 2 driver is 75 MB so it will fail with:
+ ```
+ error: failed to create configmap: Request entity too large: limit is 3145728
+ ```
+ Hence we need the above mentioned steps in this readme.

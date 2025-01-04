@@ -1,194 +1,199 @@
-## For artifactory:
 
-1.Switch to the work folder
-```
-cd /Users/sureshv/myCode/github-sv/jas_helm_install/jfrog_qa_custom_values/mysteps
-```
+# Artifactory Setup Guide
 
-2. Set the Following Environment variables:
-```
-export MY_NAMESPACE=jfrog-ns
-export MY_HELM_RELEASE=artifactory-release
+## Steps to Set Up Artifactory
 
-export MASTER_KEY=$(openssl rand -hex 32)
-# Save this master key to reuse it later
-echo ${MASTER_KEY}
-# or you can hardcode it to
-export MASTER_KEY=c64231fe4324121f5de6a5834f35195bba0d857695f80c974c788cfdb4e70f09
+### **Mandatory Steps**
 
-export JOIN_KEY=$(openssl rand -hex 32)
-# Save this join key to reuse it later
-echo ${JOIN_KEY}
-# or you can hardcode it to
-export JOIN_KEY=6dec6691f86d9e3de3cc4645f7a7eb33c3adc31071ec0d6567ad2069295c5397
+1. **Switch to the work folder**:
+   ```bash
+   cd /Users/sureshv/myCode/github-sv/jas_helm_install/jfrog_qa_custom_values/mysteps
+   ```
 
-export RT_VERSION=7.84.14
+2. **Set Environment Variables**:
+   ```bash
+   export MY_NAMESPACE=jfrog-ns
+   export MY_HELM_RELEASE=artifactory-release
 
-export ADMIN_USERNAME=admin
-export ADMIN_PASSWORD=password
-
-export DB_SERVER=10.1.1.1
+   export MASTER_KEY=$(openssl rand -hex 32)
+   echo ${MASTER_KEY} # Save for future reuse
 
 
-export RT_DATABASE_USER=artifactory
-export RT_DATABASE_PASSWORD=password
-export ARTIFACTORY_DB=sureshv-helm-ha-db
-```
+   export JOIN_KEY=$(openssl rand -hex 32)
+   echo ${JOIN_KEY} # Save for future reuse
 
-3. Prepare a clean K8s environment:
-```
-helm uninstall $MY_HELM_RELEASE -n $MY_NAMESPACE
-kubectl delete ns  $MY_NAMESPACE
-kubectl create ns  $MY_NAMESPACE
-```
 
-4. Create the secrets:
+   export RT_VERSION=7.84.14 # Replace with the Artifactory version you want to deploy
+   export ADMIN_USERNAME=admin
+   export ADMIN_PASSWORD=password
+   export DB_SERVER=10.1.1.1
+   export RT_DATABASE_USER=artifactory
+   export RT_DATABASE_PASSWORD=password
+   export ARTIFACTORY_DB=sureshv-helm-ha-db
+   ```
 
-a) Master and Join Keys:
-```
-kubectl create secret generic masterkey-secret --from-literal=master-key=${MASTER_KEY} -n $MY_NAMESPACE
-kubectl create secret generic joinkey-secret --from-literal=join-key=${JOIN_KEY} -n $MY_NAMESPACE
-```
-b) License:
-- [Add Licenses Using Secrets](https://jfrog.com/help/r/jfrog-installation-setup-documentation/add-licenses-using-secrets)
-```
-kubectl create secret generic artifactory-license --from-file=artifactory.lic=/Users/sureshv/Documents/Test_Scripts/helm_upgrade/licenses/art.lic -n $MY_NAMESPACE
+3. **Prepare a clean K8s environment**:
+   ```bash
+   helm uninstall $MY_HELM_RELEASE -n $MY_NAMESPACE
+   kubectl delete ns $MY_NAMESPACE
+   kubectl create ns $MY_NAMESPACE
+   ```
 
-```
-c) Database
-[Use an External Database with Artifactory Helm Installation](https://jfrog.com/help/r/jfrog-installation-setup-documentation/use-an-external-database-with-artifactory-helm-installation)
+4. **Create Required Secrets**:
+   a) Master and Join Keys:
+   ```bash
+   kubectl create secret generic masterkey-secret --from-literal=master-key=${MASTER_KEY} -n $MY_NAMESPACE
+   kubectl create secret generic joinkey-secret --from-literal=join-key=${JOIN_KEY} -n $MY_NAMESPACE
+   ```
+   b) License:
 
-If using Postgres external database
-```
-kubectl create secret generic artifactory-database-creds \
---from-literal=db-user=$RT_DATABASE_USER \
---from-literal=db-password=$RT_DATABASE_PASSWORD \
---from-literal=db-url=jdbc:postgresql://$DB_SERVER:5432/$ARTIFACTORY_DB -n $MY_NAMESPACE
-```
-If using Oracle database check the subsection on :
-`Configure Artifactory Helm Installation with an External Oracle Database`
-```
-kubectl create secret generic artifactory-database-creds \
---from-literal=db-user=$RT_DATABASE_USER \
---from-literal=db-password=$RT_DATABASE_PASSWORD \
---from-literal=db-url=jdbc:oracle:thin:@$DB_SERVER:1521:$ARTIFACTORY_DB -n $MY_NAMESPACE
-```
-As per  https://www.oracle.com/database/technologies/appdev/jdbc-downloads.html  , get all new and older versions of Oracle JDBC drivers from Maven Central Repository  i.e  https://repo1.maven.org/maven2/com/oracle/database/jdbc/ojdbc8/ . For example: [ojdbc8-19.16.0.0.jar](https://repo1.maven.org/maven2/com/oracle/database/jdbc/ojdbc8/19.16.0.0/ojdbc8-19.16.0.0.jar) or [ojdbc8-19.24.0.0.jar](https://repo1.maven.org/maven2/com/oracle/database/jdbc/ojdbc8/19.24.0.0/ojdbc8-19.24.0.0.jar) i.e the latest in the 19.x series as of Aug 2024. 
+   - [Add Licenses Using Secrets](https://jfrog.com/help/r/jfrog-installation-setup-documentation/add-licenses-using-secrets)
+   ```bash
+     kubectl create secret generic artifactory-license --from-file=artifactory.lic=/path/to/art.lic -n $MY_NAMESPACE
 
-d) Admin user password:
-```
-kubectl create secret generic art-creds --from-literal=bootstrap.creds='admin@*=password' -n $MY_NAMESPACE
- 
-```
-e) If a file is below the K8s `configmap` limit of `3 MB` you can create it using:  
-```
-kubectl  create configmap oci_type2_zip \                         
-   --from-file=instantclient-basic-linux.x64-21.11.0.0.0dbru.zip=instantclient-basic-linux.x64-21.11.0.0.0dbru.zip \
-   -n $MY_NAMESPACE
-```
-But the   [Oracle Instant Client](https://www.oracle.com/database/technologies/instant-client/downloads.html) Type 2 driver is 75 MB so 
-it will fail with:
- ```
- error: failed to create configmap: Request entity too large: limit is 3145728
- ```
- So  as mentioned in [prepopulate_PV_with_file_larger_than_3MB_configmap_limit.md](prepopulate_PV_with_file_larger_than_3MB_configmap_limit.md) one option for Airgap environment is to create a PV and scp the 
-driver zip file to that PV .
-```
-kubectl apply -f ../artifactory/prepopulate_pv_with_custom_oracle_instantclient_type2_driver_zip.yaml -n $MY_NAMESPACE
+     For example:
 
-kubectl cp instantclient-basic-linux.x64-21.11.0.0.0dbru.zip copy-pod:/mnt/data/ -n $MY_NAMESPACE
+   kubectl create secret generic artifactory-license \
+   --from-file=artifactory.lic=/Users/sureshv/Documents/Test_Scripts/helm_upgrade/licenses/art.lic -n $MY_NAMESPACE
 
-or
+   ```
+   c) Database:
 
-tar cf - instantclient-basic-linux.x64-21.11.0.0.0dbru.zip | pv | kubectl exec -i -n $MY_NAMESPACE copy-pod -- tar xf - -C /mnt/data/
-```
-Note:
-YOu may get  error message `exec failed: unable to start container process: exec: "tar": executable file not found in 
-$PATH` which indicates that the tar command is not available in the container's environment. The `oc cp` (or `kubectl cp`) 
-command typically relies on tar to perform the copy operation, and if the container does not have tar installed, the copy operation will fail.
+   [Use an External Database with Artifactory Helm Installation](https://jfrog.com/help/r/jfrog-installation-setup-documentation/use-an-external-database-with-artifactory-helm-installation)
 
-**Ref KBs:**
-- https://github.com/gitta-jfrog/kubernetes/blob/main/distribution/preStartCommandExample.yaml
-- [Configure Other External Databases with Artifactory Helm Installation](https://jfrog.com/help/r/jfrog-installation-setup-documentation/use-an-external-database-with-artifactory-helm-installation)
-- [Configure Artifactory to use Oracle](https://jfrog.com/help/r/jfrog-installation-setup-documentation/configure-artifactory-to-use-oracle)
-- [How to resolve the oracle DB driver error with metadata service after upgrading to version 7.55.x and above in kubernetes with splitServicesToContainers](https://jfrog.com/help/r/artifactory-how-to-resolve-the-oracle-db-driver-error-with-metadata-service-after-upgrading-to-version-7-55-x-and-above-in-kubernetes-with-splitservicestocontainers)
-5. 
-   Pick the Artifactory sizing configuration from https://github.com/jfrog/charts/blob/master/stable/artifactory/sizing
+   **Using Postgres external database**:
+
+   ```bash
+   kubectl create secret generic artifactory-database-creds \
+     --from-literal=db-user=$RT_DATABASE_USER \
+     --from-literal=db-password=$RT_DATABASE_PASSWORD \
+     --from-literal=db-url=jdbc:postgresql://$DB_SERVER:5432/$ARTIFACTORY_DB -n $MY_NAMESPACE
+   ```
+   
+   **Using Oracle Database**:
+
+   If you want to use an external Oracle Database , we need the [Oracle Instant Client Type 2 driver](https://www.oracle.com/database/technologies/instant-client/downloads.html) which is 75 MB.
+   
+   To mount the "Oracle Instant Client Type 2 driver" we experimented different options :
+   - cannot  use configmap as a K8s configmap has 3 MB limit
+   - “[Oracle Instant Client Setup with InitContainer in Artifactory Pod](using_customInitcontainer_for_Oracle_InstantClient_type2_driver.md#oracle-instant-client-setup-with-initcontainer-in-artifactory-pod)”  
+   - Use Persistent Volume (PV) for files larger than 3 MB  [prepopulate_PV_with_file_larger_than_3MB_configmap_limit.md](prepopulate_PV_with_file_larger_than_3MB_configmap_limit.md)
+
+   Finally we used steps in [Oracle Instant Client Setup with Custom artifactory-pro image](using_custom_artifactory-pro-image_with_Oracle_InstantClient_type2_driver.md) which uses [artifactory/values-artifactory_w_oci_type2_in_artifactory-pro_image.yml](artifactory/values-artifactory_w_oci_type2_in_artifactory-pro_image.yml)
+
+   Refer subsection `Configure Artifactory Helm Installation with an External Oracle Database` in [Use an External Database with Artifactory Helm Installation](https://jfrog.com/help/r/jfrog-installation-setup-documentation/use-an-external-database-with-artifactory-helm-installation) 
+
+   ```bash
+   kubectl create secret generic artifactory-database-creds \
+     --from-literal=db-user=$RT_DATABASE_USER \
+     --from-literal=db-password=$RT_DATABASE_PASSWORD \
+     --from-literal=db-url=jdbc:oracle:thin:@$DB_SERVER:1521:$ARTIFACTORY_DB -n $MY_NAMESPACE
+   ```
+
+
+   d) Admin User Password:
+   ```bash
+   kubectl create secret generic art-creds --from-literal=bootstrap.creds='admin@*=password' -n $MY_NAMESPACE
+   ```
+
+5. **Run Helm Commands**:
+
+Pick the Artifactory sizing configuration from https://github.com/jfrog/charts/blob/master/stable/artifactory/sizing
 
 I will use [artifactory-large.yaml](https://github.com/jfrog/charts/blob/master/stable/artifactory/sizing/artifactory-large.yaml) and 
 [artifactory-large-extra-config.yaml](https://github.com/jfrog/charts/blob/master/stable/artifactory/sizing/artifactory-large-extra-config.yaml)
 
-Optional:  merge all of them for Artifactory:
-Note: This way of merging does not work well when  `extraEnvironmentVariables` is not a root element and
+   - **Dry Run**:
+     ```bash
+     helm upgrade --install $MY_HELM_RELEASE \
+       -f ../artifactory/values-main.yaml \
+       -f ../artifactory/values-artifactory.yaml \
+       -f ../artifactory/artifactory-large.yaml \
+       -f ../artifactory/artifactory-large-extra-config.yaml \
+       --namespace $MY_NAMESPACE \
+       --set global.versions.artifactory="${RT_VERSION}" \
+       --dry-run \
+       ./artifactory-107.84.14.tgz
+     ```
+   - **Deploy**:
+     ```bash
+     helm upgrade --install $MY_HELM_RELEASE \
+       -f ../artifactory/values-main.yaml \
+       -f ../artifactory/values-artifactory.yaml \
+       -f ../artifactory/artifactory-large.yaml \
+       -f ../artifactory/artifactory-large-extra-config.yaml \
+       --namespace $MY_NAMESPACE \
+       --set global.versions.artifactory="${RT_VERSION}" \
+       ./artifactory-107.84.14.tgz
+     ```
+
+   **Note:** All the Java Options in `artifactory.javaOpts.other: >` in `artifactory-large-extra-config.yaml` are applied as is 
+   to the `shared.extraJavaOpts` in the final artifactory pod's system.yaml 
+   as specified  https://github.com/jfrog/charts/blob/master/stable/artifactory/files/system.yaml#L45 i.e
+   ```
+     {{- if .other }}
+       {{ .other }}
+     {{- end }}
+   ```
+   `>` treats the multi-line string as a single line, folding line breaks into spaces.
+   So the following :
+   ```
+   artifactory:
+     javaOpts:
+       other: >
+         -XX:InitialRAMPercentage=40
+         -XX:MaxRAMPercentage=65
+         -Dartifactory.async.corePoolSize=80
+         ...
+   ```
+   becomes:
+   ```
+   shared:
+     extraJavaOpts: >
+       -server  -Xss256k ....
+       -XX:InitialRAMPercentage=40 -XX:MaxRAMPercentage=65 -Dartifactory.async.corePoolSize=80
+       ...
+   ```
+
+6. **Verify Deployment**:
+   ```bash
+   kubectl get pods -o wide --namespace $MY_NAMESPACE
+   kubectl describe pod "${MY_HELM_RELEASE}-artifactory-0" --namespace $MY_NAMESPACE
+   kubectl logs -f "${MY_HELM_RELEASE}-artifactory-0" --all-containers=true --max-log-requests=10 --namespace $MY_NAMESPACE
+   kubectl get nodes -o wide --namespace $MY_NAMESPACE
+   ```
+
+---
+
+### **Experimental Steps**
+
+1. **Set Hardcoded Keys**:
+   Replace dynamic keys with hardcoded values (not recommended for production):
+   ```bash
+   export MASTER_KEY=c64231fe4324121f5de6a5834f35195bba0d857695f80c974c788cfdb4e70f09
+   export JOIN_KEY=6dec6691f86d9e3de3cc4645f7a7eb33c3adc31071ec0d6567ad2069295c5397
+   ```
+
+2. **Merging Configuration Files**:
+   ```bash
+   python ../../scripts/merge_yaml_with_comments.py ../artifactory/values-main.yaml \
+   ../artifactory/values-artifactory.yaml \
+   ../artifactory/artifactory-large.yaml \
+   ../artifactory/artifactory-large-extra-config.yaml -o artifactory_mergedfile.yaml
+   ```
+**Note:** This way of merging does not work well when  `extraEnvironmentVariables` is not a root element and
 when you use "artifactory.customVolumes: |" and   "artifactory.customVolumeMounts: |" so skip it.
-```
-python ../../scripts/merge_yaml_with_comments.py ../artifactory/values-main.yaml \
-../artifactory/values-artifactory.yaml \
-../artifactory/artifactory-large.yaml \
-../artifactory/artifactory-large-extra-config.yaml -o artifactory_mergedfile.yaml
-```
+---
 
-Note: All the Java Options in `artifactory.javaOpts.other: >` in `artifactory-large-extra-config.yaml` are applied as is 
-to the `shared.extraJavaOpts` in the final artifactory pod's system.yaml 
-as specified  https://github.com/jfrog/charts/blob/master/stable/artifactory/files/system.yaml#L45 i.e
-```
-  {{- if .other }}
-    {{ .other }}
-  {{- end }}
-```
-`>` treats the multi-line string as a single line, folding line breaks into spaces.
-So the following :
-```
-artifactory:
-  javaOpts:
-    other: >
-      -XX:InitialRAMPercentage=40
-      -XX:MaxRAMPercentage=65
-      -Dartifactory.async.corePoolSize=80
-      ...
-```
-becomes:
-```
-shared:
-  extraJavaOpts: >
-    -server  -Xss256k ....
-    -XX:InitialRAMPercentage=40 -XX:MaxRAMPercentage=65 -Dartifactory.async.corePoolSize=80
-    ...
-```
+### **References**
 
+- https://github.com/gitta-jfrog/kubernetes/blob/main/distribution/preStartCommandExample.yaml
 
-6. First do a Dry run:
-```
-helm upgrade --install $MY_HELM_RELEASE \
--f ../artifactory/values-main.yaml \
--f ../artifactory/values-artifactory.yaml \
--f ../artifactory/artifactory-large.yaml \
--f ../artifactory/artifactory-large-extra-config.yaml \
---namespace $MY_NAMESPACE \
---set global.versions.artifactory="${RT_VERSION}" \
---dry-run \
-./artifactory-107.84.14.tgz
-```
-7. Next run without the --dry-run
-```
-helm upgrade --install $MY_HELM_RELEASE \
--f ../artifactory/values-main.yaml \
--f ../artifactory/values-artifactory.yaml \
--f ../artifactory/artifactory-large.yaml \
--f ../artifactory/artifactory-large-extra-config.yaml \
---namespace $MY_NAMESPACE \
---set global.versions.artifactory="${RT_VERSION}" \
-./artifactory-107.84.14.tgz
-```
+- [Configure Other External Databases with Artifactory Helm Installation](https://jfrog.com/help/r/jfrog-installation-setup-documentation/use-an-external-database-with-artifactory-helm-installation)
 
-### Check the node external IP , pod status and logs
+- [Configure Artifactory to use Oracle](https://jfrog.com/help/r/jfrog-installation-setup-documentation/configure-artifactory-to-use-oracle)
 
-```
-kubectl get pods -o wide --namespace $MY_NAMESPACE
-kubectl get nodes -o wide --namespace $MY_NAMESPACE
-kubectl describe pod "${MY_HELM_RELEASE}-artifactory-0" --namespace $MY_NAMESPACE
-kubectl logs -f "${MY_HELM_RELEASE}-artifactory-0" --all-containers=true --max-log-requests=10 --namespace $MY_NAMESPACE
-```
+- [How to resolve the oracle DB driver error with metadata service after upgrading to version 7.55.x and above in kubernetes with splitServicesToContainers](https://jfrog.com/help/r/artifactory-how-to-resolve-the-oracle-db-driver-error-with-metadata-service-after-upgrading-to-version-7-55-x-and-above-in-kubernetes-with-splitservicestocontainers)
 
 ---
 ### Other use-cases:
