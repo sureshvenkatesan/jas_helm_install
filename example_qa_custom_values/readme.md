@@ -49,11 +49,11 @@
 
    - [Add Licenses Using Secrets](https://jfrog.com/help/r/jfrog-installation-setup-documentation/add-licenses-using-secrets)
    ```bash
-     kubectl create secret generic artifactory-license --from-file=artifactory.lic=/path/to/art.lic -n $MY_NAMESPACE
-
-     For example:
-
-   kubectl create secret generic artifactory-license \
+   kubectl create secret generic artifactory-license --from-file=artifactory.lic=/path/to/art.lic -n $MY_NAMESPACE
+   ```
+  For example:
+  ```bash
+  kubectl create secret generic artifactory-license \
    --from-file=artifactory.lic=/Users/sureshv/Documents/Test_Scripts/helm_upgrade/licenses/art.lic -n $MY_NAMESPACE
 
    ```
@@ -100,8 +100,7 @@
 
 Pick the Artifactory sizing configuration from https://github.com/jfrog/charts/blob/master/stable/artifactory/sizing
 
-I will use [artifactory-large.yaml](https://github.com/jfrog/charts/blob/master/stable/artifactory/sizing/artifactory-large.yaml) and 
-[artifactory-large-extra-config.yaml](https://github.com/jfrog/charts/blob/master/stable/artifactory/sizing/artifactory-large-extra-config.yaml)
+I will use [artifactory-large.yaml](https://github.com/jfrog/charts/blob/master/stable/artifactory/sizing/artifactory-large.yaml)
 
    - **Dry Run**:
      ```bash
@@ -109,7 +108,6 @@ I will use [artifactory-large.yaml](https://github.com/jfrog/charts/blob/master/
        -f ../artifactory/values-main.yaml \
        -f ../artifactory/values-artifactory.yaml \
        -f ../artifactory/artifactory-large.yaml \
-       -f ../artifactory/artifactory-large-extra-config.yaml \
        --namespace $MY_NAMESPACE \
        --set global.versions.artifactory="${RT_VERSION}" \
        --dry-run \
@@ -121,15 +119,14 @@ I will use [artifactory-large.yaml](https://github.com/jfrog/charts/blob/master/
        -f ../artifactory/values-main.yaml \
        -f ../artifactory/values-artifactory.yaml \
        -f ../artifactory/artifactory-large.yaml \
-       -f ../artifactory/artifactory-large-extra-config.yaml \
        --namespace $MY_NAMESPACE \
        --set global.versions.artifactory="${RT_VERSION}" \
        ./artifactory-107.84.14.tgz
      ```
 
-   **Note:** All the Java Options in `artifactory.javaOpts.other: >` in `artifactory-large-extra-config.yaml` are applied as is 
+   **Note:** All the Java Options in `artifactory.javaOpts.other: >` in `artifactory-large.yaml` are applied as is 
    to the `shared.extraJavaOpts` in the final artifactory pod's system.yaml 
-   as specified  https://github.com/jfrog/charts/blob/master/stable/artifactory/files/system.yaml#L45 i.e
+   as specified  https://github.com/jfrog/charts/blob/master/stable/artifactory/files/system.yaml#L51 i.e
    ```
      {{- if .other }}
        {{ .other }}
