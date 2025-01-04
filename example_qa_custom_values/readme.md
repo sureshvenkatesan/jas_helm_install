@@ -40,6 +40,7 @@
    ```
 
 4. **Create Required Secrets**:
+
    a) Master and Join Keys:
    ```bash
    kubectl create secret generic masterkey-secret --from-literal=master-key=${MASTER_KEY} -n $MY_NAMESPACE
@@ -51,12 +52,11 @@
    ```bash
    kubectl create secret generic artifactory-license --from-file=artifactory.lic=/path/to/art.lic -n $MY_NAMESPACE
    ```
-  For example:
-  ```bash
-  kubectl create secret generic artifactory-license \
-   --from-file=artifactory.lic=/Users/sureshv/Documents/Test_Scripts/helm_upgrade/licenses/art.lic -n $MY_NAMESPACE
-
-   ```
+    For example:
+    ```bash
+    kubectl create secret generic artifactory-license \
+    --from-file=artifactory.lic=/Users/sureshv/Documents/Test_Scripts/helm_upgrade/licenses/art.lic -n $MY_NAMESPACE
+    ```
    c) Database:
 
    [Use an External Database with Artifactory Helm Installation](https://jfrog.com/help/r/jfrog-installation-setup-documentation/use-an-external-database-with-artifactory-helm-installation)
@@ -102,6 +102,20 @@ Pick the Artifactory sizing configuration from https://github.com/jfrog/charts/b
 
 I will use [artifactory-large.yaml](https://github.com/jfrog/charts/blob/master/stable/artifactory/sizing/artifactory-large.yaml)
 
+**Note:**
+To download the Helm chart from the JFrog repository in an air-gapped environment, follow these steps:
+
+a) On the Online Machine:
+  ```bash
+   helm repo add jfrog https://charts.jfrog.io
+   helm repo update
+   helm pull jfrog/artifactory --version 107.84.14
+   ```
+
+b) Transfer the `artifactory-107.84.14.tgz` File :
+   - Copy the `artifactory-107.84.14.tgz` file to a USB drive or other transfer medium to make it available on the machine in air-gap which has access to the K8s cluster.
+
+c) 
    - **Dry Run**:
      ```bash
      helm upgrade --install $MY_HELM_RELEASE \
@@ -180,6 +194,7 @@ I will use [artifactory-large.yaml](https://github.com/jfrog/charts/blob/master/
    ```
 **Note:** This way of merging does not work well when  `extraEnvironmentVariables` is not a root element and
 when you use "artifactory.customVolumes: |" and   "artifactory.customVolumeMounts: |" so skip it.
+
 ---
 
 ### **References**
