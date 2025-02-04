@@ -244,6 +244,8 @@ Then create the PV and PVC as mentioned in https://jfrog.com/help/r/artifactory-
 
 ## Deploying Distribution via Helm using `jfrog/distribution` chart
 
+**Note:** See more detail steps and troubelshooting  in [distribution/test_deploy_distribution_to_jf-gcp-env.md](distribution/test_deploy_distribution_to_jf-gcp-env.md)
+
 1. Switch to the work folder
 ```
 cd /Users/sureshv/myCode/github-sv/jas_helm_install/jfrog_qa_custom_values/mysteps
