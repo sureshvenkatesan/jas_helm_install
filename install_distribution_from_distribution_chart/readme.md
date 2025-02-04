@@ -13,11 +13,11 @@ export MY_DIST_HELM_RELEASE=distribution-release
 ```
 
 3. Pick the Distribution sizing template from https://github.com/jfrog/charts/tree/master/stable/distribution/sizing .
-I used [distrubution-medium.yaml](https://github.com/jfrog/charts/blob/master/stable/distribution/sizing/distrubution-medium.yaml)
+I used [distribution-medium.yaml](https://github.com/jfrog/charts/blob/master/stable/distribution/sizing/distribution-medium.yaml)
 
 ```
 python ../../scripts/merge_yaml_with_comments.py ../values/values-main.yaml \
-/Users/sureshv/myCode/github-jfrog/charts/stable/distribution/sizing/distrubution-medium.yaml  -o 3_mergedfile.yaml
+/Users/sureshv/myCode/github-jfrog/charts/stable/distribution/sizing/distribution-medium.yaml  -o 3_mergedfile.yaml
 ```
 
 4. Verify you have the helm  chart you need:

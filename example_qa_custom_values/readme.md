@@ -257,12 +257,12 @@ export MY_DIST_HELM_RELEASE=distribution-release
 ```
 
 3. Pick the Distribution sizing template from https://github.com/jfrog/charts/tree/master/stable/distribution/sizing .
-I used [distrubution-medium.yaml](https://github.com/jfrog/charts/blob/master/stable/distribution/sizing/distrubution-medium.yaml)
+I used [distribution-medium.yaml](https://github.com/jfrog/charts/blob/master/stable/distribution/sizing/distribution-medium.yaml)
 
 Optional: 
 ```
 python ../../scripts/merge_yaml_with_comments.py ../distribution/values-main.yaml \
-../distribution/distrubution-medium.yaml  -o distribution_mergedfile.yaml
+../distribution/distribution-medium.yaml  -o distribution_mergedfile.yaml
 ```
 
 4. Verify you have the helm  chart you need:
@@ -278,7 +278,7 @@ This will download the chart as distribution-102.25.1.tgz
 ```
 helm upgrade --install $MY_DIST_HELM_RELEASE \
 -f ../distribution/values-main.yaml \
--f ../distribution/distrubution-medium.yaml \
+-f ../distribution/distribution-medium.yaml \
 --namespace $MY_NAMESPACE \
 --set distribution.joinKey="${JOIN_KEY}" \
 --set distribution.jfrogUrl="{JFROG_URL}" \
@@ -288,7 +288,8 @@ helm upgrade --install $MY_DIST_HELM_RELEASE \
 ```
 
 6. Next run without the --dry-run
- 
+
+
 ---
 
 ## To fix license do the following.

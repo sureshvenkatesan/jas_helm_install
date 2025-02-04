@@ -163,11 +163,11 @@ python ../nest_yaml_with_comments.py artifactory-small.yaml \
 python ../nest_yaml_with_comments.py artifactory-small-extra-config.yaml \
  artifactory -o nested-artifactory-extra-config.yaml 
 ```
-Pick the https://github.com/jfrog/charts/blob/master/stable/distribution/sizing/distrubution-medium.yaml and  
+Pick the https://github.com/jfrog/charts/blob/master/stable/distribution/sizing/distribution-medium.yaml and  
 nest it under "distribution:"
 
 ```
-python ../nest_yaml_with_comments.py /Users/sureshv/myCode/github-jfrog/charts/stable/distribution/sizing/distrubution-medium.yaml \
+python ../nest_yaml_with_comments.py /Users/sureshv/myCode/github-jfrog/charts/stable/distribution/sizing/distribution-medium.yaml \
  distribution -o nested-distrubution.yaml
 ```
 
