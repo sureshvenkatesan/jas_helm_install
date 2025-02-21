@@ -78,8 +78,12 @@ See  in [artifactory/values-artifactory_w_oci_type2_in_artifactory-pro_image.yml
 **Note:** The `preStartCommand` and `extraEnvironmentVariables` are required.
 
 Also if you are pulling the `artifactory-pro` image from a  docker registry for example `psazuse.jfrog.io` that is different from the 
-`global.imageRegistry` then set that value to an empty string as shown  in [../install_artifactory_from_artifactory_chart/values/values-main.yaml](../install_artifactory_from_artifactory_chart/values/values-main.yaml) and [../install_artifactory_from_artifactory_chart/values/values-artifactory-gcp-gstorage-postgres-w-oci-type2driver-in-rt
--image.yaml](../install_artifactory_from_artifactory_chart/values/values-artifactory-gcp-gstorage-postgres-w-oci-type2driver-in-rt-image.yaml)
+`global.imageRegistry` then set that value to an empty string as shown  in [../install_artifactory_from_artifactory_chart/values/values-main.yaml#L23](../install_artifactory_from_artifactory_chart/values/values-main.yaml#L23) and [artifactory/values-artifactory_w_oci_type2_in_artifactory-pro_image.yml#L94-L97](artifactory/values-artifactory_w_oci_type2_in_artifactory-pro_image.yml#L94-L97) which actually uses Oracle database for persistence.
+
+Note: In my test lab in GCP since I used postgres database for artifactory persistence I tested the oracle driver mounting  using [../install_artifactory_from_artifactory_chart/values/values-artifactory-gcp-gstorage-postgres-w-oci-type2driver-in-rt
+-image.yaml#L88-L90](../install_artifactory_from_artifactory_chart/values/values-artifactory-gcp-gstorage-postgres-w-oci-type2driver-in-rt-image.yaml#L88-L90)
+
+
 
 ### 4. Deploy or Upgrade the Helm Chart
 
