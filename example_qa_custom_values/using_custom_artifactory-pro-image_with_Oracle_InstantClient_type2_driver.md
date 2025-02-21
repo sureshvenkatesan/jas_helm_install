@@ -88,7 +88,7 @@ Note: In my test lab in GCP since I used postgres database for artifactory persi
 ### 4. Deploy or Upgrade the Helm Chart
 **Note:** the steps to set the environmental variables is in the main [readme.md](readme.md)
 
-After modifying the `values-artifactory.yaml`, you can deploy or upgrade your Helm chart with the following command:
+After modifying the [artifactory/values-artifactory.yaml](artifactory/values-artifactory.yaml) to [artifactory/values-artifactory_w_oci_type2_in_artifactory-pro_image.yml](artifactory/values-artifactory_w_oci_type2_in_artifactory-pro_image.yml) , you can deploy or upgrade your Helm chart with the following command:
 
 a) First do a Dry run:
 ```
