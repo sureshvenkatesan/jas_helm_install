@@ -1,22 +1,26 @@
 # Oracle Instant Client Setup with Custom artifactory-pro image
 
-Please review [Java 11 Licensing: What You’re Really Asking](https://jfrog.com/blog/java-11-licensing-what-youre-really-asking/)
+Please review [Java 11 Licensing: What You’re Really Asking](https://jfrog.com/blog/java-11-licensing-what-youre-really-asking/).
+
+Oracle Instant Client is a mandatory requirement because the JFrog metadata service does not use the JDBC driver since its a Go application and not Java. Therefore, to support the connection between Artifactory and database, you would need to install the thin client (type 4) and the OCI (type 2).
+
 The Oracle Instant Client Type2 driver ([instantclient-basic-linux.x64-21.11.0.0.0dbru.zip](https://download.oracle.com/otn_software/linux/instantclient/2111000/instantclient-basic-linux.x64-21.11.0.0.0dbru.zip)) and later versions is licensed under the 
-GPL, and Jfrog is  not permitted to distribute it (with the exception of the PostgreSQL driver). Therefore JFrog cannot  
-build a custom Artifactory Docker image that includes this driver .
+GPL, and JFrog is  not permitted to distribute it (with the exception of the PostgreSQL driver). 
+
+Therefore JFrog cannot build a custom Artifactory Docker image that includes this driver .
 
 Please use the right Oracle Instant Client Type2 driver from
 [Oracle Instant Client Downloads for Linux x86-64 (64-bit)](https://www.oracle.com/database/technologies/instant-client/linux-x86-64-downloads.html)
 which  contains both the  thin client (type 4) jdbc driver and the OCI (type 2) client that is 
 compatible with the JRE version mentioned in 
 [Java Requirements for JFrog Products](https://jfrog.com/help/r/jfrog-installation-setup-documentation/java-requirements-for-jfrog-products)
-as recommended by Oracle in [Oracle Database JDBC driver and Companion Jars Downloads](https://www.oracle.com/database/technologies/appdev/jdbc-downloads.html)
-
-
+as recommended by Oracle in [Oracle Database JDBC driver and Companion Jars Downloads](https://www.oracle.com/database/technologies/appdev/jdbc-downloads.html).
 
 As per Artifactory [Embedded OpenJDK Version](https://jfrog.com/help/r/jfrog-release-information/embedded-openjdk-version)
 JFrog artifactory versions between 7.46.3 and 7.98.14 ship with openjdk version 17.
-From JFrog artifactory version 7.104.5 it ships with  java 21 (openjdk version "21.0.5" 2024-10-15 LTS).
+
+From JFrog artifactory version 7.104.5 it ships with  openjdk version 21 (openjdk version "21.0.5" 2024-10-15 LTS).
+
 As per [Oracle Database JDBC driver and Companion Jars Downloads](https://www.oracle.com/database/technologies/appdev/jdbc-downloads.html)
 the ojdbc17.jar is certified with bith JDK 17 and 21.
 
@@ -24,7 +28,7 @@ As per [ARTIFACTORY: How to configure Artifactory with an external database when
 > [Oracle for Artifactory](https://jfrog.com/help/r/jfrog-installation-setup-documentation/oracle-for-artifactory) 
 > [Configure Artifactory to use Oracle](https://jfrog.com/help/r/jfrog-installation-setup-documentation/configure-artifactory-to-use-oracle) 
 you could use Oracle Instant Client Type2 driver ([instantclient-basic-linux.x64-23.7.0.25.01.zip](https://download.oracle.com/otn_software/linux/instantclient/2370000/instantclient-basic-linux.x64-23.7.0.25.01.zip))
-which has thin client (type 4) jdbc driver named ojdbc17.jar.
+which also has thin client (type 4) jdbc driver i.e **ojdbc17.jar**.
 
 
 ### Proposed Solution
