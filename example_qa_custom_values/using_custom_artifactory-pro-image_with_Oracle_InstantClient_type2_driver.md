@@ -95,7 +95,7 @@ Once the image is built and pushed to the container registry, you will modify th
     registry: psazuse.jfrog.io
     repository: sv-test-docker/sv-artifactory-pro
     tag: v7.84.14
-  preStartCommand: "mkdir -p /opt/jfrog/artifactory/var/bootstrap/artifactory/tomcat/lib/; cp /opt/oracle/instantclient/ojdbc17.jar /opt/jfrog/artifactory/var/bootstrap/artifactory/tomcat/lib/"
+  preStartCommand: "mkdir -p /opt/jfrog/artifactory/var/bootstrap/artifactory/tomcat/lib/; rm -f /opt/jfrog/artifactory/var/bootstrap/artifactory/tomcat/lib/ojdbc8.jar; cp /opt/oracle/instantclient/ojdbc17.jar /opt/jfrog/artifactory/var/bootstrap/artifactory/tomcat/lib/"
   extraEnvironmentVariables:
     - name: LD_LIBRARY_PATH
       value: /opt/oracle/instantclient:/opt/jfrog/artifactory/var/bootstrap/artifactory/tomcat/lib
