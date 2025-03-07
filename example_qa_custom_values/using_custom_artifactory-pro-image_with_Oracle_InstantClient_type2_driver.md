@@ -1,7 +1,5 @@
 # Oracle Instant Client Setup with Custom artifactory-pro image
 
-Please review [Java 11 Licensing: What You’re Really Asking](https://jfrog.com/blog/java-11-licensing-what-youre-really-asking/).
-
 Oracle Instant Client is a mandatory requirement because the JFrog metadata service does not use the JDBC driver since it is a Go application and not Java. Therefore, to support the connection between Artifactory and the database, you need to install both the **thin client (Type 4)** and the **OCI client (Type 2)**.
 
 The **Oracle Instant Client Type 2 driver**  
@@ -19,6 +17,8 @@ For configuring **Artifactory with an external Oracle database** in a **Helm dep
 You can use the **Oracle Instant Client Type 2 driver**  
 ([instantclient-basic-linux.x64-23.7.0.25.01.zip](https://download.oracle.com/otn_software/linux/instantclient/2370000/instantclient-basic-linux.x64-23.7.0.25.01.zip)),  
 which includes the **Thin Client (Type 4) JDBC driver (`ojdbc17.jar`)**.
+
+Other relevant KB: [Java 11 Licensing: What You’re Really Asking](https://jfrog.com/blog/java-11-licensing-what-youre-really-asking/).
 
 ---
 
