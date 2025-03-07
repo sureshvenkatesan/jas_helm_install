@@ -22,11 +22,11 @@ JFrog artifactory versions between 7.46.3 and 7.98.14 ship with openjdk version 
 From JFrog artifactory version 7.104.5 it ships with  openjdk version 21 (openjdk version "21.0.5" 2024-10-15 LTS).
 
 As per [Oracle Database JDBC driver and Companion Jars Downloads](https://www.oracle.com/database/technologies/appdev/jdbc-downloads.html)
-the ojdbc17.jar is certified with bith JDK 17 and 21.
+the **ojdbc17.jar** is certified with bith JDK 17 and 21.
 
 As per [ARTIFACTORY: How to configure Artifactory with an external database when using Artifactory Helm Installation](https://jfrog.com/help/r/artifactory-how-to-configure-artifactory-with-an-external-database-when-using-artifactory-helm-installation) 
-> [Oracle for Artifactory](https://jfrog.com/help/r/jfrog-installation-setup-documentation/oracle-for-artifactory) 
-> [Configure Artifactory to use Oracle](https://jfrog.com/help/r/jfrog-installation-setup-documentation/configure-artifactory-to-use-oracle) 
+ -> [Oracle for Artifactory](https://jfrog.com/help/r/jfrog-installation-setup-documentation/oracle-for-artifactory) 
+ -> [Configure Artifactory to use Oracle](https://jfrog.com/help/r/jfrog-installation-setup-documentation/configure-artifactory-to-use-oracle) ,
 you could use Oracle Instant Client Type2 driver ([instantclient-basic-linux.x64-23.7.0.25.01.zip](https://download.oracle.com/otn_software/linux/instantclient/2370000/instantclient-basic-linux.x64-23.7.0.25.01.zip))
 which also has thin client (type 4) jdbc driver i.e **ojdbc17.jar**.
 
