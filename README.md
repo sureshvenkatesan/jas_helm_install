@@ -142,7 +142,8 @@ Once your cluster is all enabled, you can install the Jfrog platform using value
 ---
 ## Steps to generate the helm values.yaml for the JPD installation
 
-**Prerequisites:**
+### Prerequisites:
+
 Please download the  python script to merge values.yaml files with best effort to preserve comments, formatting,
 and order of items from https://github.com/Aref-Riant/yaml-merger-py
 
@@ -152,7 +153,7 @@ pip install ruamel.yaml
 pip install mergedeep
 ```
 
-usage:
+Usage:
 ```
 python yaml-merger.py file1.yaml file2.yaml > mergedfile.yaml
 ```
@@ -220,7 +221,7 @@ export JFROG_PLATFORM_CHART_VERSION=11.0.6
 ```
 ---
 
-### 1. Prepare the K8s environment:
+### 3. Prepare the K8s environment:
 
 **If you are starting with a clean k8s environment:**
 
@@ -276,7 +277,7 @@ Optional: I used the steps in [Creating only "CloudSql proxy" and secrets for "b
 
 ---
 
-### 2. Create the secrets
+### 4. Create the secrets
 
 **Master and Join Keys:**
 ```text
@@ -308,19 +309,20 @@ kubectl get secret artifactory-license -o json -n $MY_NAMESPACE | jq -r '.data."
 <!-- Note: if you create it as the following then the dataKey will be art.lic ( i.e same as the name of the file)
 ```text
 kubectl create secret generic artifactory-license \  
---from-file=/Users/sureshv/Documents/Test_Scripts/helm_upgrade/licenses/art.lic -n $MY_NAMESPACE -->
-```
+--from-file=/Users/sureshv/Documents/Test_Scripts/helm_upgrade/licenses/art.lic -n $MY_NAMESPACE 
+``` 
+-->
 
 
 ---
 
-### 3. step-by-step approach to improvise the values.yaml  we will finally use:
+### 5. step-by-step approach to improvise the values.yaml  we will finally use:
 
 Ref: https://github.com/jfrog/charts/blob/master/stable/artifactory/sizing/artifactory-small.yaml
 
 File mentioned below are in [For_PROD_Setup](values/For_PROD_Setup)
 
-1. Start with the 1_artifactory-small.yaml for TEST environment or 1_artifactory-large.yaml for PROD 
+a) Start with the 1_artifactory-small.yaml for TEST environment or 1_artifactory-large.yaml for PROD 
    environment
 
 #### Custom Configuration
