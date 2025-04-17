@@ -322,10 +322,9 @@ Ref: https://github.com/jfrog/charts/blob/master/stable/artifactory/sizing/artif
 
 File mentioned below are in [For_PROD_Setup](values/For_PROD_Setup)
 
-a) Start with the 1_artifactory-small.yaml for TEST environment or 1_artifactory-large.yaml for PROD 
-   environment
-
-#### Custom Configuration
+#### a) Custom Configuration
+Start with the 1_artifactory-small.yaml for **TEST** environment or 1_artifactory-large.yaml for **PROD** 
+environment
 
 - Created `1_artifactory-small.yaml` by copying the original [artifactory-small.yaml](https://github.com/jfrog/charts/blob/master/stable/artifactory/sizing/artifactory-small.yaml)
 - Added the following JVM parameter to support graceful shutdown behavior:
@@ -343,15 +342,18 @@ python ../../scripts/nest_yaml_with_comments.py 1_artifactory-small.yaml \
 
 python ../../scripts/merge_yaml_with_comments.py 0_values-artifactory-xray-platform_prod_$CLOUD_PROVIDER.yaml 1_artifactory-small-nested.yaml -o tmp2/1_mergedfile.yml
 
-<!-- python yaml-merger.py 0_values-artifactory-xray-platform_prod_$CLOUD_PROVIDER.yaml 1_artifactory-small.yaml > tmp/1_mergedfile.yaml
-or
-python yaml-merger.py 0_values-artifactory-xray-platform_prod_$CLOUD_PROVIDER.yaml 1_artifactory-large.yaml > tmp/1_mergedfile.yaml -->
 ```
- 
+<!-- 
+```
+python yaml-merger.py 0_values-artifactory-xray-platform_prod_$CLOUD_PROVIDER.yaml 1_artifactory-small.yaml > tmp/1_mergedfile.yaml
+or
+python yaml-merger.py 0_values-artifactory-xray-platform_prod_$CLOUD_PROVIDER.yaml 1_artifactory-large.yaml > tmp/1_mergedfile.yaml 
+```
+--> 
 
 ---
-**Artifactory Database Credentials:**
-2. Override using the 2_artifactory_db_passwords.yaml
+#### b) Artifactory Database Credentials:
+Override using the 2_artifactory_db_passwords.yaml
 
 
 ```text
@@ -366,12 +368,18 @@ kubectl create secret generic artifactory-database-creds \
 ```
 python ../../scripts/merge_yaml_with_comments.py tmp2/1_mergedfile.yml 2_artifactory_db_passwords.yaml -o tmp2/2_mergedfile.yaml
 
-<!-- python yaml-merger.py tmp/1_mergedfile.yaml 2_artifactory_db_passwords.yaml > tmp/2_mergedfile.yaml -->
 ```
+
+<!-- 
+```
+python yaml-merger.py tmp/1_mergedfile.yaml 2_artifactory_db_passwords.yaml > tmp/2_mergedfile.yaml 
+```
+-->
+
 ---
 
-**The artifactory default admin user secret:**
-3. Override using 3_artifactory_admin_user.yaml 
+#### c)The artifactory default admin user secret:
+Override using 3_artifactory_admin_user.yaml 
 
 Review KB [ARTIFACTORY: How To Unlock A User(s) Who Is Locked Out Of Artifactory and Recover Admin Account](https://jfrog.com/help/r/artifactory-how-to-unlock-a-user-s-who-is-locked-out-of-artifactory-and-recover-admin-account)
 
@@ -384,8 +392,9 @@ kubectl create secret generic art-creds --from-literal=bootstrap.creds='admin@*=
 ```
 python ../../scripts/merge_yaml_with_comments.py tmp2/2_mergedfile.yaml 3_artifactory_admin_user.yaml -o tmp2/3_mergedfile.yaml
 
-<!-- python yaml-merger.py tmp/2_mergedfile.yaml 3_artifactory_admin_user.yaml > tmp/3_mergedfile.yaml -->
 ```
+<!-- python yaml-merger.py tmp/2_mergedfile.yaml 3_artifactory_admin_user.yaml > tmp/3_mergedfile.yaml -->
+
 ---
 
 4. Override the binaryStore
