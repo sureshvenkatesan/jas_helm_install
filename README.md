@@ -378,7 +378,7 @@ python yaml-merger.py tmp/1_mergedfile.yaml 2_artifactory_db_passwords.yaml > tm
 
 ---
 
-#### c)The artifactory default admin user secret:
+#### c) The artifactory default admin user secret:
 Override using 3_artifactory_admin_user.yaml 
 
 Review KB [ARTIFACTORY: How To Unlock A User(s) Who Is Locked Out Of Artifactory and Recover Admin Account](https://jfrog.com/help/r/artifactory-how-to-unlock-a-user-s-who-is-locked-out-of-artifactory-and-recover-admin-account)
@@ -397,7 +397,7 @@ python ../../scripts/merge_yaml_with_comments.py tmp2/2_mergedfile.yaml 3_artifa
 
 ---
 
-4. Override the binaryStore
+#### d) Override the binaryStore
 
 For AWS use [S3 Direct Upload Template (Recommended)](https://jfrog.com/help/r/jfrog-installation-setup-documentation/s3-direct-upload-template-recommended) :
 ```
@@ -407,7 +407,8 @@ or
 
 For GCP use [google-storage-v2-direct template configuration (Recommended)](https://jfrog.com/help/r/jfrog-installation-setup-documentation/google-storage-v2-direct-template-configuration-recommended) mentioned in [Google Storage Binary Provider Native Client Template](https://jfrog.com/help/r/jfrog-installation-setup-documentation/google-storage-binary-provider-native-client-template) :
 
-Note: I created the secrets `artifactory-gcp-creds` and `custom-binarystore`  in [Creating only "CloudSql proxy" and secrets for "binarystore.xml"](https://github.com/sureshvenkatesan/jf-gcp-env/tree/feature/jf_with_cloudsql?tab=readme-ov-file#creating-only-cloudsql-proxy-and-secrets-for-binarystorexml-)  as mentioned above.
+Note: I created the secrets `artifactory-gcp-creds` and `custom-binarystore`  in [Creating only "CloudSql proxy" and secrets for "binarystore.xml"](https://github.com/sureshvenkatesan/jf-gcp-env/tree/feature/jf_with_cloudsql?tab=readme-ov-file#creating-only-cloudsql-proxy-and-secrets-for-binarystorexml-)  as mentioned above , instead of the following 
+
 ```
 kubectl delete secret  artifactory-gcp-creds -n $MY_NAMESPACE
 
@@ -420,7 +421,8 @@ kubectl apply -f binarystore_config/custom-binarystore.yaml -n $MY_NAMESPACE
 ```
 ---
 
-5. The tuning configuration in KB [How do I tune Artifactory for heavy loads?](https://jfrog.com/help/r/how-do-i-tune-artifactory-for-heavy-loads/how-do-i-tune-artifactory-for-heavy-loads) is already taken care in the 1_artifactory-small.yaml for TEST environment or 1_artifactory-large.yaml for PROD in Step1 , and the default values in https://github.com/jfrog/charts/blob/master/stable/artifactory/values.yaml
+#### e) Tuning as per KB
+The tuning configuration in KB [How do I tune Artifactory for heavy loads?](https://jfrog.com/help/r/how-do-i-tune-artifactory-for-heavy-loads/how-do-i-tune-artifactory-for-heavy-loads) is already taken care in the 1_artifactory-small.yaml for TEST environment or 1_artifactory-large.yaml for PROD in Step1 , and the default values in https://github.com/jfrog/charts/blob/master/stable/artifactory/values.yaml
 
 
 
@@ -438,7 +440,8 @@ kubectl create secret generic artifactory-custom-systemyaml --from-file=system.y
 -n $MY_NAMESPACE
 ``` -->
 
-So now deploy the helm to check if artifactory server starts and you can login to the Artifactory UI.
+#### f) Deploy Artifactory
+Deploy Artifactory using helm , then check if artifactory server starts and you can login to the Artifactory UI.
 ```
 helm  upgrade --install $MY_HELM_RELEASE \
 -f 0_values-artifactory-xray-platform_prod_$CLOUD_PROVIDER.yaml \
@@ -453,7 +456,7 @@ helm  upgrade --install $MY_HELM_RELEASE \
 --version "${JFROG_PLATFORM_CHART_VERSION}" 
 ```
 
-#### Troubleshooting:
+#### g) Troubleshooting Artifactory Startup:
 ```
 kubectl logs -f ps-jfrog-platform-release-artifactory-0
 kubectl logs  -l app=artifactory -n $MY_NAMESPACE --all-containers
@@ -511,8 +514,9 @@ Normal   SuccessfulAttachVolume  5m4s   attachdetach-controller  AttachVolume.At
 Then redo the file uplaod test to `example-repo-local`  repository and see if it is successful .
 
 ---
-
-6. Override with the 6_xray_db_passwords_pod_size-values-small.yaml for TEST environment or 
+### Deploying Xray
+#### h) Xray Database secret
+Override with the 6_xray_db_passwords_pod_size-values-small.yaml for TEST environment or 
    6_xray_db_passwords_pod_size-values-large.yaml for PROD
 
 ```text
