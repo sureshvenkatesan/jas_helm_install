@@ -15,7 +15,9 @@ It also shows :
   to get the values to create the  secrets from environmental variables. 
 - the step-by-step approach to improvise the values.yaml using the [yaml-merger-py](https://github.com/Aref-Riant/yaml-merger-py) 
   to generate the final values.yaml needed for the helm install.
+
 ---
+## Deploying in AWS EKS
 When using AWS EKS  please review the blog - [A Guide to Installing the JFrog Platform on Amazon EKS](https://jfrog.com/blog/install-artifactory-on-eks/)
 , that outlines the  prerequisites and steps required to install and configure the JFrog Platform in Amazon EKS,
 including setting up two AWS systems:
@@ -28,10 +30,10 @@ connector" used the following which is not correct.
 ```text
 "oidc.eks..amazonaws.com/id/:sub": "system:serviceaccount::artifactory"
 ```
-Here are the steps:
-1.
 
-Create an IAM role that the Artifactory's pods service account can take on, equipped with a policy that bestows upon 
+**Here are the steps:**
+
+1. Create an IAM role that the Artifactory's pods service account can take on, equipped with a policy that bestows upon 
 them the privileges to list,  read from and write i.e the `"Action": "s3:*"` to the 'davidro-binstore' S3 bucket. 
 This bucket is intended to serve as the filestore for Artifactory.
 
@@ -90,14 +92,14 @@ export MY_HELM_RELEASE=ps-jfrog-platform-release
 Then the service account takes the format:
 `"system:serviceaccount:ps-jfrog-platform:ps-jfrog-platform-release-artifactory"`
 
-## Application Load Balancer as Ingress gateway setup
+### Application Load Balancer as Ingress gateway setup
 You can refer to either of these resources for guidance:
 - The documentation available at: https://docs.aws.amazon.com/eks/latest/userguide/aws-load-balancer-controller.html
 - Alternatively, you can also explore: https://kubernetes-sigs.github.io/aws-load-balancer-controller/v2.2/deploy/installation/
 
 Main steps are highlighted below
 
-1 - Create IAM policy for the load balancer .  This step is required only if the policy doesn’t already exists.
+1. Create IAM policy for the load balancer .  This step is required only if the policy doesn’t already exists.
 ```text
 curl -o iam-policy.json https://raw.githubusercontent.com/kubernetes-sigs/aws-load-balancer-controller/v2.2.1/docs/install/iam_policy.json
 aws iam create-policy \
@@ -135,11 +137,12 @@ helm install aws-load-balancer-controller \
 
 ```
 
-Once your cluster is all enabled, you can install the JPD platform using values.yaml that can be generated as explained in next section.
+Once your cluster is all enabled, you can install the Jfrog platform using values.yaml that can be generated as explained in next section.
 
 ---
 ## Steps to generate the helm values.yaml for the JPD installation
 
+**Prerequisites:**
 Please download the  python script to merge values.yaml files with best effort to preserve comments, formatting,
 and order of items from https://github.com/Aref-Riant/yaml-merger-py
 
@@ -153,21 +156,33 @@ usage:
 ```
 python yaml-merger.py file1.yaml file2.yaml > mergedfile.yaml
 ```
----
-After you download this git repo do:
-```text
-cd values/For_PROD_Setup
+Install `envsubst` as per https://skofgar.ch/dev/2020/08/how-to-quickly-replace-environment-variables-in-a-file/
+```
+brew install gettext
+```
+As mentioned in [JFrog Platform Helm Chart Installation Steps](https://jfrog.com/help/r/jfrog-installation-setup-documentation/jfrog-platform-helm-chart-installation-steps):
+Add the JFrog Helm Charts repository to your Helm client.
+
+```
+helm repo add jfrog https://charts.jfrog.io
+helm repo update
+
 ```
 
 ---
 
-Set the following Environmental variables based on your Deployment K8s environment where you will install the 
+1. Download this git repo and run:
+```text
+cd values/For_PROD_Setup
+```
+
+2. Set the following Environmental variables based on your Deployment K8s environment where you will install the 
 JFrog Platform.
 
 **Note:** the CLOUD_PROVIDER can be gcp or aws ( JFrog Helm charts support Azure as well but this readme was created 
 only based on gcp or aws  )
 
-**Environment variables:**
+### Environment variables:
 ```text
 export CLOUD_PROVIDER=gcp
 export MY_NAMESPACE=ps-jfrog-platform
@@ -188,24 +203,41 @@ export JOIN_KEY=763d4bdf02ff4cc16d7c5cf2abeccf3f243b5557bf738ec5438fd55df0cec3cc
 export ADMIN_USERNAME=admin
 export ADMIN_PASSWORD=password
 
-export DB_SERVER=100.185.45.104
-
+export DB_SERVER=cloudsql-proxy
+export BINARYSTOREXML_BUCKETNAME=sureshv-ps-artifactory-storage
 
 export RT_DATABASE_USER=artifactory
-export RT_DATABASE_PASSWORD=password
-export ARTIFACTORY_DB=sivas-helm-ha-db
+export RT_DATABASE_PASSWORD=artifactory
+export ARTIFACTORY_DB=artifactory
 
 export MY_RABBITMQ_ADMIN_USER_PASSWORD=password
 export XRAY_DATABASE_USER=xray
-export XRAY_DATABASE_PASSWORD=password
+export XRAY_DATABASE_PASSWORD=xray
 export XRAY_DB=xray
+
+export RT_VERSION=7.104.15
+export JFROG_PLATFORM_CHART_VERSION=11.0.6
 ```
 ---
 
-**Prepare the K8s environment:**
+### 1. Prepare the K8s environment:
 
-**Note:** These commands will be useful if you want to iterate run the helm release multiple times i.e  you are not 
-starting with a clean k8s environment
+**If you are starting with a clean k8s environment:**
+
+Create the Namespace:
+```
+kubectl create ns  $MY_NAMESPACE
+```
+Optional: I used the steps in [Creating only "CloudSql proxy" and secrets for "binarystore.xml"](https://github.com/sureshvenkatesan/jf-gcp-env/tree/feature/jf_with_cloudsql?tab=readme-ov-file#creating-only-cloudsql-proxy-and-secrets-for-binarystorexml-) which also creates the Namespace via terraform.
+
+**Or**
+
+
+**If you are not starting with a clean k8s environment:**
+
+Use below commands if you need to run the Helm release multiple times without starting from a clean Kubernetes environment. 
+
+They are helpful for iterative testing or redeployments.
 ```text
 helm uninstall $MY_HELM_RELEASE -n $MY_NAMESPACE
 
@@ -239,23 +271,17 @@ Delete Namespace only if needed as this will delete all the secrets as well:
 ```text
 kubectl delete ns  $MY_NAMESPACE
 ```
+Optional: I used the steps in [Creating only "CloudSql proxy" and secrets for "binarystore.xml"](https://github.com/sureshvenkatesan/jf-gcp-env/tree/feature/jf_with_cloudsql?tab=readme-ov-file#creating-only-cloudsql-proxy-and-secrets-for-binarystorexml-) which also creates the Namespace via terraform.
+
 
 ---
 
-**Otherwise, if you are starting with a clean k8s environment:**
-
-Create the Namespace:
-```
-kubectl create ns  $MY_NAMESPACE
-```
-
----
-**Create the secrets**
+### 2. Create the secrets
 
 **Master and Join Keys:**
 ```text
-kubectl delete secret generic masterkey-secret  -n $MY_NAMESPACE
-kubectl delete secret generic joinkey-secret   -n $MY_NAMESPACE
+kubectl delete secret masterkey-secret  -n $MY_NAMESPACE
+kubectl delete secret joinkey-secret   -n $MY_NAMESPACE
 
 kubectl create secret generic masterkey-secret --from-literal=master-key=${MASTER_KEY} -n $MY_NAMESPACE
 kubectl create secret generic joinkey-secret --from-literal=join-key=${JOIN_KEY} -n $MY_NAMESPACE
@@ -269,44 +295,63 @@ dataKey as artifactory.cluster.license for HA but not necessary) :
 kubectl delete secret  artifactory-license  -n $MY_NAMESPACE
 
 kubectl create secret generic artifactory-license --from-file=artifactory.lic=/Users/sureshv/Documents/Test_Scripts/helm_upgrade/licenses/art.lic -n $MY_NAMESPACE
-
+```
+Verify the license secret using:
+```
 kubectl get secret artifactory-license -o yaml -n $MY_NAMESPACE
-
+or
 kubectl get secret artifactory-license -o json -n $MY_NAMESPACE | jq -r '.data."artifactory.lic"' | base64 --decode
 
 ```
 
 
-Note: if you create it as the following then the dataKey will be art.lic ( i.e same as the name of the file)
+<!-- Note: if you create it as the following then the dataKey will be art.lic ( i.e same as the name of the file)
 ```text
 kubectl create secret generic artifactory-license \  
---from-file=/Users/sureshv/Documents/Test_Scripts/helm_upgrade/licenses/art.lic -n $MY_NAMESPACE
+--from-file=/Users/sureshv/Documents/Test_Scripts/helm_upgrade/licenses/art.lic -n $MY_NAMESPACE -->
 ```
-
 
 
 ---
 
-**Below steps outline the above mentioned step-by-step approach to improvise the values.yaml  you will finally use:**
+### 3. step-by-step approach to improvise the values.yaml  we will finally use:
 
-Ref: https://github.com/jfrog/charts/blob/master/stable/artifactory/values-large.yaml
+Ref: https://github.com/jfrog/charts/blob/master/stable/artifactory/sizing/artifactory-small.yaml
 
 File mentioned below are in [For_PROD_Setup](values/For_PROD_Setup)
 
-1. Start with the 1_artifactory-values-small.yaml for TEST environment or 1_artifactory-values-large.yaml for PROD 
+1. Start with the 1_artifactory-small.yaml for TEST environment or 1_artifactory-large.yaml for PROD 
    environment
 
+#### Custom Configuration
+
+- Created `1_artifactory-small.yaml` by copying the original [artifactory-small.yaml](https://github.com/jfrog/charts/blob/master/stable/artifactory/sizing/artifactory-small.yaml)
+- Added the following JVM parameter to support graceful shutdown behavior:
+
+  ```yaml
+  -Dartifactory.graceful.shutdown.max.request.duration.millis=30000
+  ```
+This allows Artifactory to wait up to 30 seconds to complete in-flight requests during shutdown.
+
+Note: `/values/For_PROD_Setup/tmp/` already in .gitignore
+
 ```text
-python yaml-merger.py 0_values-dynata-artifactory-xray-platform_prod_$CLOUD_PROVIDER.yaml 1_artifactory-values-small.yaml > tmp/1_mergedfile.yaml
+python ../../scripts/nest_yaml_with_comments.py 1_artifactory-small.yaml \
+ artifactory -o 1_artifactory-small-nested.yaml 
+
+python ../../scripts/merge_yaml_with_comments.py 0_values-artifactory-xray-platform_prod_$CLOUD_PROVIDER.yaml 1_artifactory-small-nested.yaml -o tmp2/1_mergedfile.yml
+
+<!-- python yaml-merger.py 0_values-artifactory-xray-platform_prod_$CLOUD_PROVIDER.yaml 1_artifactory-small.yaml > tmp/1_mergedfile.yaml
 or
-python yaml-merger.py 0_values-dynata-artifactory-xray-platform_prod_$CLOUD_PROVIDER.yaml 1_artifactory-values-large.yaml > tmp/1_mergedfile.yaml
+python yaml-merger.py 0_values-artifactory-xray-platform_prod_$CLOUD_PROVIDER.yaml 1_artifactory-large.yaml > tmp/1_mergedfile.yaml -->
 ```
+ 
 
 ---
-
+**Artifactory Database Credentials:**
 2. Override using the 2_artifactory_db_passwords.yaml
 
-**Artifactory Database Credentials:**
+
 ```text
 kubectl delete secret  artifactory-database-creds  -n $MY_NAMESPACE
 
@@ -317,17 +362,16 @@ kubectl create secret generic artifactory-database-creds \
 ```
 
 ```
-python yaml-merger.py tmp/1_mergedfile.yaml 2_artifactory_db_passwords.yaml > tmp/2_mergedfile.yaml
+python ../../scripts/merge_yaml_with_comments.py tmp2/1_mergedfile.yml 2_artifactory_db_passwords.yaml -o tmp2/2_mergedfile.yaml
+
+<!-- python yaml-merger.py tmp/1_mergedfile.yaml 2_artifactory_db_passwords.yaml > tmp/2_mergedfile.yaml -->
 ```
 ---
 
+**The artifactory default admin user secret:**
 3. Override using 3_artifactory_admin_user.yaml 
 
-**The artifactory default admin user secret:**
-
-Review KB
-
-https://jfrog.com/help/r/artifactory-how-to-unlock-a-user-s-who-is-locked-out-of-artifactory-and-recover-admin-account/non-admin-user-recovery
+Review KB [ARTIFACTORY: How To Unlock A User(s) Who Is Locked Out Of Artifactory and Recover Admin Account](https://jfrog.com/help/r/artifactory-how-to-unlock-a-user-s-who-is-locked-out-of-artifactory-and-recover-admin-account)
 
 ```text
 kubectl delete secret  art-creds  -n $MY_NAMESPACE
@@ -336,24 +380,27 @@ kubectl create secret generic art-creds --from-literal=bootstrap.creds='admin@*=
 ```
 
 ```
-python yaml-merger.py tmp/2_mergedfile.yaml 3_artifactory_admin_user.yaml > tmp/3_mergedfile.yaml
+python ../../scripts/merge_yaml_with_comments.py tmp2/2_mergedfile.yaml 3_artifactory_admin_user.yaml -o tmp2/3_mergedfile.yaml
+
+<!-- python yaml-merger.py tmp/2_mergedfile.yaml 3_artifactory_admin_user.yaml > tmp/3_mergedfile.yaml -->
 ```
 ---
 
 4. Override the binaryStore
 
-For AWS https://jfrog.com/help/r/jfrog-installation-setup-documentation/s3-direct-upload-template-recommended :
+For AWS use [S3 Direct Upload Template (Recommended)](https://jfrog.com/help/r/jfrog-installation-setup-documentation/s3-direct-upload-template-recommended) :
 ```
 kubectl apply -f 4_custom-binarystore-s3-direct-use_instance-creds.yaml -n $MY_NAMESPACE
 ```
 or
 
-For GCP ( google-storage-v2-direct template configuration from https://jfrog.com/help/r/jfrog-installation-setup-documentation/google-storage-binary-provider-native-client-template ):
+For GCP use [google-storage-v2-direct template configuration (Recommended)](https://jfrog.com/help/r/jfrog-installation-setup-documentation/google-storage-v2-direct-template-configuration-recommended) mentioned in [Google Storage Binary Provider Native Client Template](https://jfrog.com/help/r/jfrog-installation-setup-documentation/google-storage-binary-provider-native-client-template) :
 
+Note: I created the secrets `artifactory-gcp-creds` and `custom-binarystore`  in [Creating only "CloudSql proxy" and secrets for "binarystore.xml"](https://github.com/sureshvenkatesan/jf-gcp-env/tree/feature/jf_with_cloudsql?tab=readme-ov-file#creating-only-cloudsql-proxy-and-secrets-for-binarystorexml-)  as mentioned above.
 ```
 kubectl delete secret  artifactory-gcp-creds -n $MY_NAMESPACE
 
-kubectl create secret generic artifactory-gcp-creds --from-file=/Users/sureshv/.gcp/gcp.credentials.json \
+kubectl create secret generic artifactory-gcp-creds --from-file=/Users/sureshv/.gcp/support-team_gco_project_ServiceAccount.json \
 -n $MY_NAMESPACE
 
 envsubst < binarystore_config/custom-binarystore-gcp.tmpl > binarystore_config/custom-binarystore.yaml
@@ -362,10 +409,14 @@ kubectl apply -f binarystore_config/custom-binarystore.yaml -n $MY_NAMESPACE
 ```
 ---
 
-5.  Override the system.yaml using either 5_artifactory_system_small.yaml for TEST environment or 
-    5_artifactory_system_large.yaml for PROD
+This step5 is not needed as it is already taken care in the 1_artifactory-small.yaml for TEST environment or 1_artifactory-large.yaml for PROD in Step1 , and the default values in https://github.com/jfrog/charts/blob/master/stable/artifactory/values.yaml
 
-See  https://jfrog.com/help/r/how-do-i-tune-artifactory-for-heavy-loads/how-do-i-tune-artifactory-for-heavy-loads
+
+
+<!-- 5.  Override the system.yaml using either 5_artifactory_system_small.yaml for TEST environment or 
+    5_artifactory_system_large.yaml for PROD as per KB [How do I tune Artifactory for heavy loads?](https://jfrog.com/help/r/how-do-i-tune-artifactory-for-heavy-loads/how-do-i-tune-artifactory-for-heavy-loads)
+
+
  
 ```
 kubectl delete secret artifactory-custom-systemyaml -n $MY_NAMESPACE
@@ -374,7 +425,79 @@ kubectl create secret generic artifactory-custom-systemyaml --from-file=system.y
 or
 kubectl create secret generic artifactory-custom-systemyaml --from-file=system.yaml=./5_artifactory_system_large.yaml \
 -n $MY_NAMESPACE
+``` -->
+
+So now deploy the helm to check if artifactory server starts and you can login to the Artifactory UI.
+
+helm  upgrade --install $MY_HELM_RELEASE \
+-f 0_values-artifactory-xray-platform_prod_$CLOUD_PROVIDER.yaml \
+-f 1_artifactory-small-nested.yaml \
+-f 2_artifactory_db_passwords.yaml \
+-f 3_artifactory_admin_user.yaml  \
+--namespace $MY_NAMESPACE jfrog/jfrog-platform  \
+--set gaUpgradeReady=true \
+--set global.versions.artifactory="${RT_VERSION}" \
+--set artifactory.masterKeySecretName="joinkey-secret" \
+--set artifactory.joinKeySecretName="masterkey-secret" \
+--version "${JFROG_PLATFORM_CHART_VERSION}" 
+
+Troubleshooting:
 ```
+kubectl logs -f ps-jfrog-platform-release-artifactory-0
+kubectl logs  -l app=artifactory -n $MY_NAMESPACE --all-containers
+kubectl logs -f -l app=artifactory -n $MY_NAMESPACE --all-containers --max-log-requests=15
+kubectl delete pod ps-jfrog-platform-release-artifactory-0  -n $MY_NAMESPACE
+kubectl describe pod ps-jfrog-platform-release-artifactory-0 -n $MY_NAMESPACE
+```
+Set the base url the output you see from below in the `http://$SERVICE_HOSTNAME/ui/admin/configuration/general`:
+```
+export SERVICE_HOSTNAME=$(kubectl get svc --namespace ps-jfrog-platform ps-jfrog-platform-release-artifactory-nginx --template "{{ (index .status.loadBalancer.ingress 0).ip }}")
+echo http://$SERVICE_HOSTNAME
+```
+For example I set it to: http://100.231.185.7 . I also set the Server Name to "sureshvps".
+
+
+Next Upload a file to `example-repo-local`  repository and see if it is successful , by tailing the artifactory-service.log using:
+```
+kubectl logs -f ps-jfrog-platform-release-artifactory-0 -c artifactory
+```
+
+If it fails check the binaryStore.xml using:
+```
+kubectl exec -it ps-jfrog-platform-release-artifactory-0 -c artifactory --namespace ps-jfrog-platform -- ls -al  /opt/jfrog/artifactory/var/etc/artifactory
+
+kubectl exec -it ps-jfrog-platform-release-artifactory-0 -c artifactory --namespace ps-jfrog-platform -- cat /opt/jfrog/artifactory/var/etc/artifactory/binarystore.xml
+```
+
+Since I used GCP I also verifioed if I have the correct GCP service account using:
+```
+kubectl exec -it ps-jfrog-platform-release-artifactory-0 -c artifactory --namespace ps-jfrog-platform -- cat /opt/jfrog/artifactory/var/etc/artifactory/gcp.credentials.json
+
+```
+If invalid you can remove it using the following:
+```
+kubectl exec -it ps-jfrog-platform-release-artifactory-0 -c artifactory --namespace ps-jfrog-platform -- rm -rf /opt/jfrog/artifactory/var/etc/artifactory/gcp.credentials.json
+```
+The fix the GCP creds , delete the `ps-jfrog-platform-release-artifactory-0` pod and see if the file upload works.
+
+Note: If a K8s cluster node of the GKE cluster is undergoing maintenance and the pod is assigned to another node and
+```
+kubectl describe pod ps-jfrog-platform-release-artifactory-0 -n $MY_NAMESPACE
+```
+shows below error:
+```
+Events:
+  Type     Reason              Age   From                     Message
+  ----     ------              ----  ----                     -------
+  Normal   Scheduled           24s   default-scheduler        Successfully assigned ps-jfrog-platform/ps-jfrog-platform-release-artifactory-0 to gke-sureshv-ps-clust-sureshv-ps-node--ea322457-w7gd
+  Warning  FailedAttachVolume  24s   attachdetach-controller  Multi-Attach error for volume "pvc-23719d6c-bf0f-488b-90e8-8818dacd3364" Volume is already exclusively attached to one node and can't be attached to another
+```
+After 5-6 min it should get resolved and you will see:
+```
+Normal   SuccessfulAttachVolume  5m4s   attachdetach-controller  AttachVolume.Attach succeeded for volume "pvc-23719d6c-bf0f-488b-90e8-8818dacd3364"
+```
+Then redo the file uplaod test to `example-repo-local`  repository and see if it is successful .
+
 ---
 
 6. Override with the 6_xray_db_passwords_pod_size-values-small.yaml for TEST environment or 
@@ -517,9 +640,25 @@ python yaml-merger.py tmp/6_mergedfile.yaml 7_rabbitmq_enabled_external_values-l
 First do a  Dry run:
 ```text
 helm  upgrade --install $MY_HELM_RELEASE \
--f tmp/3_mergedfile.yaml \
+-f tmp2/3_mergedfile.yaml \
 --namespace $MY_NAMESPACE jfrog/jfrog-platform  \
 --set gaUpgradeReady=true \
+--dry-run
+```
+or
+
+or
+
+```text
+helm  upgrade --install $MY_HELM_RELEASE \
+-f 0_values-artifactory-xray-platform_prod_$CLOUD_PROVIDER.yaml \
+-f 1_artifactory-small-nested.yaml \
+-f 2_artifactory_db_passwords.yaml \
+-f 3_artifactory_admin_user.yaml  \
+--namespace $MY_NAMESPACE jfrog/jfrog-platform  \
+--set gaUpgradeReady=true \
+--set global.versions.artifactory="${RT_VERSION}" \
+--version 11.0.6 \
 --dry-run
 ```
 
@@ -533,8 +672,26 @@ you can Install  Artifactory HA  with say replicaCount=2 .
 helm  upgrade --install $MY_HELM_RELEASE \
 -f tmp/3_mergedfile.yaml \
 --namespace $MY_NAMESPACE jfrog/jfrog-platform  \
---set gaUpgradeReady=true
+--set gaUpgradeReady=true \
+--set global.versions.artifactory="${RT_VERSION}"
+--version 107.104.15
 ```
+or
+
+```text
+helm  upgrade --install $MY_HELM_RELEASE \
+-f 0_values-artifactory-xray-platform_prod_$CLOUD_PROVIDER.yaml \
+-f 1_artifactory-small-nested.yaml \
+-f 2_artifactory_db_passwords.yaml \
+-f 3_artifactory_admin_user.yaml  \
+--namespace $MY_NAMESPACE jfrog/jfrog-platform  \
+--set gaUpgradeReady=true \
+--set global.versions.artifactory="${RT_VERSION}" \
+--set artifactory.masterKeySecretName="joinkey-secret" \
+--set artifactory.joinKeySecretName="masterkey-secret" \
+--version 11.0.6 
+```
+
 ---
 
 Check Artifactory logs to verify that it can connect to the filestore and database and can start successfully :

@@ -27,7 +27,9 @@ For example:
 ## Deploying Artifactory via Helm using jfrog/jfrog-platform chart
 Note: 
 - All products include Distribution will be in the same namespace.
--  It is not recommended to use different databases for different charts. The JFrog platform chart is designed to work with a single database only. To install an external PostgreSQL database, you can use the Bitnami PostgreSQL chart. Then, deploy Artifactory and Distribution using their respective charts instead of the JFrog platform chart.
+-  It is not recommended to use different database types and database servers for different charts. The JFrog platform chart is designed to work with a single database server only. 
+- To install an external PostgreSQL database , you can use the Bitnami PostgreSQL chart. 
+- If you want to use seperate database servers for Artifactory and Distribution , deploy Artifactory and Distribution using their respective charts instead of the JFrog platform chart.
 
 To clarify, the JFrog Platform chart supports one of two options:
 1. All JFrog products work with the bundled PostgreSQL (`postgresql.enabled: true`), or
@@ -45,7 +47,7 @@ It is used for internal communication, and it is not the related to the custom b
 - Fill in your own `imagePullSecrets` and `imageRegistry` in values/values-main.yaml
 -  Pass your own ca.crt for artifactory if needed for ssl configuration. 
 
-See prerequisite for ca.crt. [here](https://jfrog.com/help/r/jfrog-installation-setup-documentation/prerequisites-for-custom-tls-certificate) 
+See prerequisite for ca.crt in  [Prerequisites for Custom TLS Certificate](https://jfrog.com/help/r/jfrog-installation-setup-documentation/prerequisites-for-custom-tls-certificate) 
 and [Establish TLS and Add Certificates in Helm Installation](https://jfrog.com/help/r/jfrog-installation-setup-documentation/establish-tls-and-add-certificates-in-helm-installation)
 ```
 kubectl create secret tls my-cacert --cert=ca.crt --key=ca.private.key -n <namespace> 
@@ -64,6 +66,7 @@ cd mySteps
 
 2. Set the Following Environment variables:
 ```
+export CLOUD_PROVIDER=gcp
 export MY_NAMESPACE=ps-jfrog-platform
 export MY_HELM_RELEASE=ps-jfrog-platform-release
 
@@ -71,27 +74,28 @@ export MASTER_KEY=$(openssl rand -hex 32)
 # Save this master key to reuse it later
 echo ${MASTER_KEY}
 # or you can hardcode it to
-export MASTER_KEY=c64231fe4324121f5de6a5834f35195bba0d857695f80c974c788cfdb4e70f09
+export MASTER_KEY=02ba23e285e065d2a372b889ac3dbd51510dd0399875f95294312634f50b6960
 
 export JOIN_KEY=$(openssl rand -hex 32)
 # Save this join key to reuse it later
 echo ${JOIN_KEY}
 # or you can hardcode it to
-export JOIN_KEY=6dec6691f86d9e3de3cc4645f7a7eb33c3adc31071ec0d6567ad2069295c5397
+export JOIN_KEY=763d4bdf02ff4cc16d7c5cf2abeccf3f243b5557bf738ec5438fd55df0cec3cc
 
-export RT_VERSION=7.84.14
+export RT_VERSION=7.104.15
 
 export ADMIN_USERNAME=admin
 export ADMIN_PASSWORD=password
 
-export DB_SERVER=
+export DB_SERVER=cloudsql-proxy
 
 
 export RT_DATABASE_USER=artifactory
-export RT_DATABASE_PASSWORD=password
-export ARTIFACTORY_DB=sureshv-helm-ha-db
+export RT_DATABASE_PASSWORD=artifactory
+export ARTIFACTORY_DB=artifactory
 
-export BINARYSTOREXML_BUCKETNAME=sureshv-ps-us-east-1
+#export BINARYSTOREXML_BUCKETNAME=sureshv-ps-us-east-1
+export BINARYSTOREXML_BUCKETNAME=sureshv-ps-artifactory-storage
 ```
 
 3. Prepare a clean K8s environment:
@@ -284,8 +288,9 @@ kubectl get nodes -o wide --namespace $MY_NAMESPACE
 
 kubectl get pods -w --namespace ps-jfrog-platform
 kubectl get svc --namespace ps-jfrog-platform -w ps-jfrog-platform-release-artifactory-nginx
-$ export SERVICE_HOSTNAME=$(kubectl get svc --namespace ps-jfrog-platform ps-jfrog-platform-release-artifactory-nginx --template "{{ range (index .status.loadBalancer.ingress 0) }}{{ . }}{{ end }}")
-$ echo http://$SERVICE_HOSTNAME/
+
+export SERVICE_HOSTNAME=$(kubectl get svc --namespace ps-jfrog-platform ps-jfrog-platform-release-artifactory-nginx --template "{{ (index .status.loadBalancer.ingress 0).ip }}")
+echo http://$SERVICE_HOSTNAME
 
 - Method 2: Port Forwarding
 

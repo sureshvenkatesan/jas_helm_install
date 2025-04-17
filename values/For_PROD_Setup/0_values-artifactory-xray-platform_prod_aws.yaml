@@ -7,8 +7,7 @@ global:
   # seems to match the external FQDN
   # jfrogUrlUI: https://artifactory-stage.example.com 
 
-  joinKeySecretName: joinkey-secret
-  masterKeySecretName: masterkey-secret
+
   versions:
     artifactory: 7.59.11
     xray: 3.76.7
@@ -22,6 +21,8 @@ postgresql:
 
 artifactory:
   enabled: true
+  joinKeySecretName: joinkey-secret
+  masterKeySecretName: masterkey-secret
   probes:
     timeoutSeconds: 15
   mc:
@@ -29,10 +30,15 @@ artifactory:
   jfconnect:
     enabled: true
   nginx:
-    enabled: true
-  systemYamlOverride:
-    existingSecret: artifactory-custom-systemyaml
-    dataKey: system.yaml
+    enabled: false
+  # systemYamlOverride:
+  #   existingSecret: artifactory-custom-systemyaml
+  #   dataKey: system.yaml
+  serviceAccount:
+    create: true
+    annotations:
+      eks.amazonaws.com/role-arn: arn:aws:iam::346894814804:role/JFrogArtifactoryS3AccessRole
+    automountServiceAccountToken: true
   database:
     type: postgresql
     driver: org.postgresql.Driver
@@ -69,22 +75,9 @@ artifactory:
 
 
 
-    persistence:
+    persistence: 
+      enabled: true
       customBinarystoreXmlSecret: custom-binarystore
-      googleStorage:
-        gcpServiceAccount:
-          enabled: true
-          customSecretName: artifactory-gcp-creds
-
-    customVolumes: |
-      - name: artifactory-gcp-creds
-        secret:
-          secretName: artifactory-gcp-creds
-    customVolumeMounts: |
-      - name: artifactory-gcp-creds
-        mountPath: "/tmp/gcp.credentials.json"
-        subPath: gcp.credentials.json
-    preStartCommand: "cp -fv /tmp/gcp.credentials.json {{ .Values.artifactory.persistence.mountPath }}/etc/artifactory/gcp.credentials.json"
 
 
   # Run every Artifactory service to its own container
