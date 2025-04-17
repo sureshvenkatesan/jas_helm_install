@@ -409,7 +409,7 @@ kubectl apply -f binarystore_config/custom-binarystore.yaml -n $MY_NAMESPACE
 ```
 ---
 
-This step5 is not needed as it is already taken care in the 1_artifactory-small.yaml for TEST environment or 1_artifactory-large.yaml for PROD in Step1 , and the default values in https://github.com/jfrog/charts/blob/master/stable/artifactory/values.yaml
+5. The tuning configuration in KB [How do I tune Artifactory for heavy loads?](https://jfrog.com/help/r/how-do-i-tune-artifactory-for-heavy-loads/how-do-i-tune-artifactory-for-heavy-loads) is already taken care in the 1_artifactory-small.yaml for TEST environment or 1_artifactory-large.yaml for PROD in Step1 , and the default values in https://github.com/jfrog/charts/blob/master/stable/artifactory/values.yaml
 
 
 
@@ -428,7 +428,7 @@ kubectl create secret generic artifactory-custom-systemyaml --from-file=system.y
 ``` -->
 
 So now deploy the helm to check if artifactory server starts and you can login to the Artifactory UI.
-
+```
 helm  upgrade --install $MY_HELM_RELEASE \
 -f 0_values-artifactory-xray-platform_prod_$CLOUD_PROVIDER.yaml \
 -f 1_artifactory-small-nested.yaml \
@@ -440,8 +440,9 @@ helm  upgrade --install $MY_HELM_RELEASE \
 --set artifactory.masterKeySecretName="joinkey-secret" \
 --set artifactory.joinKeySecretName="masterkey-secret" \
 --version "${JFROG_PLATFORM_CHART_VERSION}" 
+```
 
-Troubleshooting:
+#### Troubleshooting:
 ```
 kubectl logs -f ps-jfrog-platform-release-artifactory-0
 kubectl logs  -l app=artifactory -n $MY_NAMESPACE --all-containers
