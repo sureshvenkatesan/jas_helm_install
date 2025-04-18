@@ -729,7 +729,7 @@ Output:
 }
 ```
 To get this working I had to the following:
-### Example Troubleshooting Workflow:
+#### Vhost Troubleshooting Workflow:
 
 1. **Check Existing Vhosts**:
    ```sh
