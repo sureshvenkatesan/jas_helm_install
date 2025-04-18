@@ -144,6 +144,8 @@ Once your cluster is all enabled, you can install the Jfrog platform using value
 
 ### Prerequisites:
 
+You can parse the https://github.com/jfrog/charts/blob/master/stable/jfrog-platform/values.yaml   https://yaml.vercel.app/ 
+
 Please download the  python script to merge values.yaml files with best effort to preserve comments, formatting,
 and order of items from https://github.com/Aref-Riant/yaml-merger-py
 
@@ -218,6 +220,7 @@ export XRAY_DB=xray
 
 export RT_VERSION=7.104.15
 export JFROG_PLATFORM_CHART_VERSION=11.0.6
+export XRAY_VERSION=3.111.24
 ```
 ---
 
@@ -514,10 +517,9 @@ Normal   SuccessfulAttachVolume  5m4s   attachdetach-controller  AttachVolume.At
 Then redo the file uplaod test to `example-repo-local`  repository and see if it is successful .
 
 ---
-### Deploying Xray
-#### h) Xray Database secret
-Override with the 6_xray_db_passwords_pod_size-values-small.yaml for TEST environment or 
-   6_xray_db_passwords_pod_size-values-large.yaml for PROD
+### 7. Deploying Xray
+#### a) Xray Database secret
+
 
 ```text
 kubectl delete secret generic xray-database-creds -n $MY_NAMESPACE
@@ -525,22 +527,212 @@ kubectl create secret generic xray-database-creds \
 --from-literal=db-user=$XRAY_DATABASE_USER \
 --from-literal=db-password=$XRAY_DATABASE_PASSWORD \
 --from-literal=db-url=postgres://$DB_SERVER:5432/$XRAY_DB\?sslmode=disable -n $MY_NAMESPACE
+```
 
+Verify using jq:
 If "jq --version" >=1.6  where jq  @base64d filter is avaiable use :
-
+```
 kubectl get secret xray-database-creds  -n $MY_NAMESPACE -o json | jq '.data | map_values(@base64d)'
-
+```
 otherwise use:
+```
 bash decode_secret.sh <secret-to-decrypt>  <namespace>
 ```
-
+#### b) Secret to override the xray system yaml
 ```
+envsubst < 8_xray_system_yaml.tmpl > tmp2/8_xray_system_yaml.yaml
+
+kubectl delete  secret xray-custom-systemyaml -n $MY_NAMESPACE
+kubectl create secret generic xray-custom-systemyaml --from-file=system.yaml=tmp2/8_xray_system_yaml.yaml \
+-n $MY_NAMESPACE
+```
+
+#### c) Secret for Rabbitmq admin password:
+
+The rabbitmq user name as per https://github.com/jfrog/charts/blob/master/stable/xray/values.yaml#L514 is hardcoded
+to "guest" .It can be set to "admin" only as value and not as secrert as per  
+https://github.com/bitnami/charts/blob/main/bitnami/rabbitmq/values.yaml#L155
+
+Also to pass the rabbitmq password as secret use the key as `rabbitmq-password` 
+
+kubectl create secret generic rabbitmq-admin-creds \
+--from-literal=rabbitmq-password=$MY_RABBITMQ_ADMIN_USER_PASSWORD -n $MY_NAMESPACE 
+<!-- --from-literal=url=amqp://$MY_HELM_RELEASE-rabbitmq:5672  -->
+
+This is used in [6_xray_db_passwords.yaml](values/For_PROD_Setup/6_xray_db_passwords.yaml)
+
+#### d) Nest the xray sizing yaml file from Xray chart:
+Take the  https://github.com/jfrog/charts/blob/master/stable/xray/sizing/xray-xsmall.yaml 
+( or the T-shirt size yaml you want for Xray) under "xray" to use it with the jfrog/platform chart.
+```
+python ../../scripts/nest_yaml_with_comments.py 6_xray-xsmall.yaml \
+ xray -o 6_xray-xsmall-nested.yaml 
+```
+
+<!-- ```
 python yaml-merger.py tmp/3_mergedfile.yaml 6_xray_db_passwords_pod_size-values-small.yaml > tmp/6_mergedfile.yaml
 or
 python yaml-merger.py tmp/3_mergedfile.yaml 6_xray_db_passwords_pod_size-values-large.yaml > tmp/6_mergedfile.yaml
+``` -->
+#### e) Deploy Xray as part of your JPD
+<!-- Override with the 6_xray_db_passwords_pod_size-values-small.yaml for TEST environment or 
+   6_xray_db_passwords_pod_size-values-large.yaml for PROD -->
+
+Here is the helm command:
+
+```
+helm  upgrade --install $MY_HELM_RELEASE \
+-f 0_values-artifactory-xray-platform_prod_$CLOUD_PROVIDER.yaml \
+-f 1_artifactory-small-nested.yaml \
+-f 2_artifactory_db_passwords.yaml \
+-f 3_artifactory_admin_user.yaml  \
+-f 6_xray-xsmall-nested.yaml \
+-f 6_xray_db_passwords.yaml \
+-f 8_override_xray_system_yaml_in_values.yaml \
+--namespace $MY_NAMESPACE jfrog/jfrog-platform  \
+--set gaUpgradeReady=true \
+--set global.versions.artifactory="${RT_VERSION}" \
+--set artifactory.masterKeySecretName="joinkey-secret" \
+--set artifactory.joinKeySecretName="masterkey-secret" \
+--set global.versions.xray="${XRAY_VERSION}" \
+--set xray.masterKeySecretName="joinkey-secret" \
+--set xray.joinKeySecretName="masterkey-secret" \
+--version "${JFROG_PLATFORM_CHART_VERSION}" 
 ```
 
-7. **Rabbitmq configuration:**
+Why does it give these warnings?
+```
+coalesce.go:298: warning: cannot overwrite table with non table for artifactory.postgresql.metrics.extraEnvVars (map[])
+coalesce.go:237: warning: skipped value for rabbitmq.initContainers: Not a table.
+```
+
+
+
+#### e) Troubleshoot Xray setup:
+kubectl  delete pod ps-jfrog-platform-release-xray-pre-upgrade-hook-28dnx ps-jfrog-platform-release-xray-0 --namespace $MY_NAMESPACE
+kubectl  delete pod  ps-jfrog-platform-release-xray-0 --namespace $MY_NAMESPACE
+
+kubectl describe pod ps-jfrog-platform-release-xray-0 -n $MY_NAMESPACE
+kubectl logs  -l app=xray -n $MY_NAMESPACE --all-containers -n $MY_NAMESPACE
+kubectl logs -f -l app=xray -n $MY_NAMESPACE --all-containers --max-log-requests=8 -n $MY_NAMESPACE
+kubectl logs -f ps-jfrog-platform-release-xray-0 -c xray-server -n $MY_NAMESPACE
+kubectl exec -it ps-jfrog-platform-release-xray-0 -c xray-server -- bash
+kubectl exec -it ps-jfrog-platform-release-xray-0 -c xray-server  -- cat /opt/jfrog/xray/var/etc/system.yaml
+kubectl exec -it ps-jfrog-platform-release-xray-0 -c xray-server  -- rm -rf  /opt/jfrog/xray/var/etc/system.yaml
+
+kubectl logs -f ps-jfrog-platform-release-xray-pre-upgrade-hook-5fqhr -n $MY_NAMESPACE
+kubectl logs -f ps-jfrog-platform-release-xray-0 -c xray-server -n $MY_NAMESPACE
+kubectl logs -f ps-jfrog-platform-release-xray-1 -c xray-server -n $MY_NAMESPACE
+
+kubectl logs -f ps-jfrog-platform-release-rabbitmq-0 -n $MY_NAMESPACE
+kubectl exec -it ps-jfrog-platform-release-rabbitmq-0 -n $MY_NAMESPACE -- bash
+
+kubectl delete pod ps-jfrog-platform-release-xray-0 ps-jfrog-platform-release-xray-1 \
+ps-jfrog-platform-release-xray-pre-upgrade-hook-5fqhr -n $MY_NAMESPACE
+
+```
+In the xray pod xray-service.log I see:
+```
+JF_SHARED_DATABASE_URL              : postgres://cloudsql-proxy:5432/xray?sslmode=disable
+JF_SHARED_RABBITMQ_VHOST            : xray
+JF_SHARED_NODE_ID                   : ps-jfrog-platform-release-xray-0
+JF_SHARED_NODE_IP                   : 10.1.2.22
+JF_SHARED_DATABASE_USERNAME         : xray
+JF_PRODUCT_DATA_INTERNAL            : /var/opt/jfrog/xray
+JF_SYSTEM_YAML                      : /opt/jfrog/xray/var/etc/system.yaml
+JF_PRODUCT_HOME                     : /opt/jfrog/xray
+JF_SHARED_NODE_NAME                 : ps-jfrog-platform-release-xray-0
+...
+
+2025-04-18T02:21:29.895Z [jfxr ] [INFO ] [dee752f0da95b279] [mq_connector:336              ] [MainServer                      ] Connecting to RabbitMQ: amqp://ps-jfrog-platform-release-rabbitmq:5672/xray, retry=34
+2025-04-18T02:21:29.900Z [jfxr ] [ERROR] [dee752f0da95b279] [mq_connector:345              ] [MainServer                      ] 
+
+  _____       _     _     _ _   __  __  ____    _                   _                      _ _       _     _
+ |  __ \     | |   | |   (_) | |  \/  |/ __ \  (_)                 | |                    (_) |     | |   | |
+ | |__) |__ _| |__ | |__  _| |_| \  / | |  | |  _ ___   _ __   ___ | |_    __ ___   ____ _ _| | __ _| |__ | | ___
+ |  _  // _  |  _ \|  _ \| | __| |\/| | |  | | | / __| |  _ \ / _ \| __|  / _  \ \ / / _  | | |/ _  |  _ \| |/ _ \
+ | | \ \ (_| | |_) | |_) | | |_| |  | | |__| | | \__ \ | | | | (_) | |_  | (_| |\ V / (_| | | | (_| | |_) | |  __/
+ |_|  \_\__ _|_ __/|_ __/|_|\__|_|  |_|\___\_\ |_|___/ |_| |_|\___/ \__|  \__ _| \_/ \__ _|_|_|\__ _|_ __/|_|\___|
+
+
+2025-04-18T02:21:29.900Z [jfxr ] [ERROR] [dee752f0da95b279] [mq_connector:346              ] [MainServer                      ] Error connecting to rabbit message queue check mq settings. Error: Exception (403) Reason: "no access to this vhost"
+```
+
+In the rabbimq pod (ps-jfrog-platform-release-rabbitmq-0) I see:
+```
+2025-04-18 02:18:27.968508+00:00 [error] <0.931.0> Error on AMQP connection <0.931.0> (10.1.0.23:58562 -> 10.1.1.10:5672, user: 'admin', state: opening):
+2025-04-18 02:18:27.968508+00:00 [error] <0.931.0> vhost xray not found
+2025-04-18 02:18:27.969187+00:00 [info] <0.931.0> closing AMQP connection <0.931.0> (10.1.0.23:58562 -> 10.1.1.10:5672, vhost: 'none', user: 'admin')
+```
+
+
+
+As per [slack](https://jfrog.slack.com/archives/CD30SKMDG/p1704871916697029?thread_ts=1704783216.516669&cid=CD30SKMDG) and  XRAY-88371:
+```
+RabbitMQ Xray vhost:
+Default "classic": '/'
+Platform "classic": 'xray'
+New HA QuorumQueues: 'xray_haq'
+```
+So how to specify that the vhost is either '/' or 'xray_haq' as only these 2 are available in the  `load_definition.json` as per below command:
+```
+kubectl get secret $MY_HELM_RELEASE-load-definition -n $MY_NAMESPACE -o json | jq -r '.data["load_definition.json"]' | base64 -d
+
+Output:
+
+{
+  "permissions": [
+    {
+      "user": "admin",
+      "vhost": "/",
+      "configure": ".*",
+      "write": ".*",
+      "read": ".*"
+    },
+    {
+      "user": "admin",
+      "vhost": "xray_haq",
+      "configure": ".*",
+      "write": ".*",
+      "read": ".*"
+    }
+  ],
+  "users": [
+    {
+      "name": "admin",
+      "password": "password",
+      "tags": "administrator"
+    }
+  ],
+  "vhosts": [
+    {
+      "name": "/"
+    },
+    {
+      "name": "xray_haq"
+    }
+  ],
+  "policies": [
+    {
+      "name": "ha-all",
+      "apply-to": "all",
+      "pattern": ".*",
+      "vhost": "/",
+      "definition": {
+        "ha-mode": "all",
+        "ha-sync-mode": "automatic"
+      }
+    }
+  ]
+}
+```
+
+---
+
+
+
+<!-- 
+#### Rabbitmq configuration:
 
 Search "memoryHighWatermark" and found new setting "vm_memory_high_watermark_absolute" that is not in
 https://github.com/jfrog/charts/blob/master/stable/xray/values-large.yaml
@@ -567,12 +759,10 @@ kubectl create secret generic xray-rabbitmq-creds --from-literal=username=admin 
 kubectl get secret xray-rabbitmq-creds  -n $MY_NAMESPACE -o json | jq '.data | map_values(@base64d)'
 
 ```
-First get the default load_definition.json  ( from your earlier deploys before you maje the load_definition as secret):
+First get the default load_definition.json  ( from your earlier deploys before you make the load_definition as secret):
 ```
-kubectl get secrets | grep load-definition -n $MY_NAMESPACE
-kubectl get secret <secret-name> -n <namespace> -o json | jq -r '.data["key"]' | base64 --decode
-kubectl get secret $MY_HELM_RELEASE-load-definition -n $MY_NAMESPACE -o json | jq -r '.data["load_definition.json"]' 
-| base64 --decode
+kubectl get secret <secret-name> -n <namespace> -o json | jq -r '.data["key"]' | base64 -d
+kubectl get secret $MY_HELM_RELEASE-load-definition -n $MY_NAMESPACE -o json | jq -r '.data["load_definition.json"]' | base64 -d
 
 ```
 and then make load_definition also as a secret after changing the admin password in it:
@@ -585,7 +775,7 @@ kubectl create secret generic $MY_HELM_RELEASE-load-definition \
 kubectl get secret $MY_HELM_RELEASE-load-definition -n $MY_NAMESPACE -o json | jq '.data | map_values(@base64d)'
 ```
 
-**Note:** If you already deployed rabbitmq from a previous Xray install you can get the  pod yal definition using:
+**Note:** If you already deployed rabbitmq from a previous Xray install you can get the  pod yaml definition using:
 ```text
 kubectl get pod $MY_HELM_RELEASE-rabbitmq-0 -n $MY_NAMESPACE -o yaml > ps-jfrog-platform-release-rabbitmq-0.yaml
 ```
@@ -1005,4 +1195,4 @@ This will produce a file named `artifactory-107.84.14.tgz`.
    helm install my-artifactory ./artifactory-107.84.14.tgz
    ```
 
-By following these steps, you should be able to download and install the specified version of the Helm chart in your air-gapped environment.
+By following these steps, you should be able to download and install the specified version of the Helm chart in your air-gapped environment. -->
