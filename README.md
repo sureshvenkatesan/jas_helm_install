@@ -609,6 +609,7 @@ coalesce.go:237: warning: skipped value for rabbitmq.initContainers: Not a table
 
 
 #### e) Troubleshoot Xray setup:
+```
 kubectl  delete pod ps-jfrog-platform-release-xray-pre-upgrade-hook-28dnx ps-jfrog-platform-release-xray-0 --namespace $MY_NAMESPACE
 kubectl  delete pod  ps-jfrog-platform-release-xray-0 --namespace $MY_NAMESPACE
 
@@ -631,6 +632,7 @@ kubectl delete pod ps-jfrog-platform-release-xray-0 ps-jfrog-platform-release-xr
 ps-jfrog-platform-release-xray-pre-upgrade-hook-5fqhr -n $MY_NAMESPACE
 
 ```
+
 In the xray pod xray-service.log I see:
 ```
 JF_SHARED_DATABASE_URL              : postgres://cloudsql-proxy:5432/xray?sslmode=disable
@@ -726,6 +728,30 @@ Output:
   ]
 }
 ```
+To get this working I had to the following:
+### Example Troubleshooting Workflow:
+
+1. **Check Existing Vhosts**:
+   ```sh
+   kubectl exec -it ps-jfrog-platform-release-rabbitmq-0 -- rabbitmqctl list_vhosts --namespace $MY_NAMESPACE
+   ```
+
+2. **Create Virtual Host**:
+   ```sh
+   kubectl exec -it ps-jfrog-platform-release-rabbitmq-0 -- rabbitmqctl add_vhost xray --namespace $MY_NAMESPACE
+   ```
+
+3. **Set Permissions**:
+   ```sh
+   kubectl exec -it ps-jfrog-platform-release-rabbitmq-0 -- rabbitmqctl set_permissions -p xray admin ".*" ".*" ".*" --namespace $MY_NAMESPACE
+   ```
+
+4. **Restart the pod ps-jfrog-platform-release-xray-0**:
+ ```sh
+ kubectl delete pod ps-jfrog-platform-release-xray-0 --namespace $MY_NAMESPACE
+ ```
+Why are all these steps required ? 
+What is the correct way to deploy xray so that the JF_SHARED_RABBITMQ_VHOST is either '/' or 'xray_haq' to match the `load_definition.json`  ?
 
 ---
 
