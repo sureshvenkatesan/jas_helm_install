@@ -6,16 +6,16 @@ shared:
   logging:
     consoleLog:
       enabled: false
-  jfrogUrl: "http://jfrog-platform-artifactory:8082"
+  jfrogUrl: "http://$MY_HELM_RELEASE-artifactory:8082"
   database:
     type: postgresql
     driver: org.postgresql.Driver
   rabbitMq:
     erlangCookie:
       value: "secretcookie"
-    url: "amqp://jfrog-platform-rabbitmq:5672"
+    url: "amqp://$MY_HELM_RELEASE-rabbitmq:5672"
     username: "admin"
-    password: "clear_text_admin_password_for_rabbitmq"
+    password: "$MY_RABBITMQ_ADMIN_USER_PASSWORD"
 contextualAnalysis:
   registry: releases-docker.jfrog.io
   image: jfrog/xray-jas-contextual-analysis
