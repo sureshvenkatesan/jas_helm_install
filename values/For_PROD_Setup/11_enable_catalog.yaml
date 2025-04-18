@@ -1,0 +1,27 @@
+catalog:
+  enabled: true
+  replicaCount: 1
+  # jfrogUrl: "http://ps-jfrog-platform-release-artifactory:8082"
+  jfrogUrl: '{{ include "jfrog-platform.jfrogUrl" . }}'
+  masterKeySecretName: masterkey-secret
+  joinKeySecretName: joinkey-secret
+  extraSystemYaml:
+    shared:
+      logging:
+        application:
+          enabled: true
+          level: info
+
+  database:
+    type: "postgresql"
+    driver: "pgx"
+    secrets:
+      user:
+        name: catalog-database-creds
+        key: db-user
+      password:
+        name: catalog-database-creds
+        key: db-password
+      url:
+        name: catalog-database-creds
+        key: db-url
