@@ -874,7 +874,7 @@ helm  upgrade --install $MY_HELM_RELEASE \
 --set jas.healthcheck.enabled=true \
 --version "${JFROG_PLATFORM_CHART_VERSION}" 
 ```
-##### Issue4: Another "pre-upgrade hooks failed" when emnabling JAS:
+##### Issue4: Another "pre-upgrade hooks failed" when enabling JAS:
 It may fail with:
 ```
 Error: UPGRADE FAILED: pre-upgrade hooks failed: 1 error occurred:
