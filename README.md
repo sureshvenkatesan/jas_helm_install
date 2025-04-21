@@ -699,6 +699,40 @@ kubectl delete pod ps-jfrog-platform-release-xray-0 ps-jfrog-platform-release-xr
 ps-jfrog-platform-release-xray-pre-upgrade-hook-5fqhr -n $MY_NAMESPACE
 
 ```
+**Verify rabbitMQ and Xray:**
+
+SSH and verify rabbitMQ is up and functional:
+```text
+$kubectl logs $MY_HELM_RELEASE-rabbitmq-0 -n $MY_NAMESPACE
+
+kubectl exec -it $MY_HELM_RELEASE-rabbitmq-0  -n $MY_NAMESPACE -- bash
+find / -name rabbitmq.conf
+cat /opt/bitnami/rabbitmq/etc/rabbitmq/rabbitmq.conf
+
+rabbitmqctl status
+rabbitmqctl cluster_status
+rabbitmqctl list_queues
+
+SSH to the rabbitmq pod and run below curl command:
+Note: the default admin password for rabbitMQ is password but we did override it to Test@123 as mentioned above:
+
+curl --user admin:Test@123 http://localhost:15672/api/vhosts
+curl --user admin:Test@123 "http://jfrog-platform-rabbitmq:15672"
+```
+
+SSH and verify the Xray server is up and functional
+```text
+kubectl exec -it $MY_HELM_RELEASE-xray-0 -n $MY_NAMESPACE -c xray-server -- bash
+
+cd /opt/jfrog/xray/var/etc
+cat /opt/jfrog/xray/var/etc/system.yaml
+
+
+cd /opt/jfrog/xray/var/log
+cat /opt/jfrog/xray/var/log/xray-server-service.log
+tail -F /opt/jfrog/xray/var/log/xray-server-service.log
+```
+
 
 If in  the xray pod xray-service.log you see:
 ```
@@ -747,56 +781,20 @@ So how to specify that the vhost is either '/' or 'xray_haq' as only these 2 are
 ```
 kubectl get secret $MY_HELM_RELEASE-load-definition -n $MY_NAMESPACE -o json | jq -r '.data["load_definition.json"]' | base64 -d
 
-Output:
-
-{
-  "permissions": [
-    {
-      "user": "admin",
-      "vhost": "/",
-      "configure": ".*",
-      "write": ".*",
-      "read": ".*"
-    },
-    {
-      "user": "admin",
-      "vhost": "xray_haq",
-      "configure": ".*",
-      "write": ".*",
-      "read": ".*"
-    }
-  ],
-  "users": [
-    {
-      "name": "admin",
-      "password": "password",
-      "tags": "administrator"
-    }
-  ],
-  "vhosts": [
-    {
-      "name": "/"
-    },
-    {
-      "name": "xray_haq"
-    }
-  ],
-  "policies": [
-    {
-      "name": "ha-all",
-      "apply-to": "all",
-      "pattern": ".*",
-      "vhost": "/",
-      "definition": {
-        "ha-mode": "all",
-        "ha-sync-mode": "automatic"
-      }
-    }
-  ]
-}
 ```
-To get this working I had to the following:
-#### Vhost Troubleshooting Workflow:
+The output is in [values/For_PROD_Setup/10_optional_load_definition.json](values/For_PROD_Setup/10_optional_load_definition.json) and it uses the password from `rabbitmq-admin-creds` specified in [values/For_PROD_Setup/6_xray_db_passwords.yaml](values/For_PROD_Setup/6_xray_db_passwords.yaml)
+
+What is the correct way to deploy xray so that the JF_SHARED_RABBITMQ_VHOST is either '/' or 'xray_haq' to match the `load_definition.json`  ?
+
+**Resolution:**
+That is why in [values/For_PROD_Setup/6_xray_db_passwords.yaml](values/For_PROD_Setup/6_xray_db_passwords.yaml) I have set "JF_SHARED_RABBITMQ_VHOST" to `"xray_haq"` in `xray.common.extraEnvVars` to resolve avoid using the Platform's `"classic"`` `'xray'` **vhost** in rabbitMQ.
+
+See the new [values/For_PROD_Setup/10_optional_load_definition.json](values/For_PROD_Setup/10_optional_load_definition.json) that is used as of Apr 20, 2025.
+
+---
+#### Vhost Troubleshooting:
+If you still want the vhost `xray` as was used in `Platform "classic"`  you can do the following,
+but it is nit required:
 
 1. **Check Existing Vhosts**:
    ```sh
@@ -817,11 +815,6 @@ To get this working I had to the following:
  ```sh
  kubectl delete pod ps-jfrog-platform-release-xray-0 --namespace $MY_NAMESPACE
  ```
-Why are all these steps required ? 
-What is the correct way to deploy xray so that the JF_SHARED_RABBITMQ_VHOST is either '/' or 'xray_haq' to match the `load_definition.json`  ?
-
-**Resolution:**
-That is why in [values/For_PROD_Setup/6_xray_db_passwords.yaml](values/For_PROD_Setup/6_xray_db_passwords.yaml) I have set "JF_SHARED_RABBITMQ_VHOST" to `"xray_haq"` in `xray.common.extraEnvVars` to resolve avoid using the Platform's `"classic"`` `'xray'` **vhost** in rabbitMQ.
 
 ---
 ### 7. Deploying JAS
@@ -1382,41 +1375,7 @@ helm  upgrade --install $MY_HELM_RELEASE \
 --set global.jfrogUrlUI="http://104.196.98.19" 
 ```
 
-**Verify:**
 
-SSH and verify rabbitMQ is up and functional:
-```text
-$kubectl logs $MY_HELM_RELEASE-rabbitmq-0 -n $MY_NAMESPACE
-
-kubectl exec -it $MY_HELM_RELEASE-rabbitmq-0  -n $MY_NAMESPACE -- bash
-find / -name rabbitmq.conf
-cat /opt/bitnami/rabbitmq/etc/rabbitmq/rabbitmq.conf
-
-rabbitmqctl status
-rabbitmqctl cluster_status
-rabbitmqctl list_queues
-
-SSH to the rabbitmq pod and run below curl command:
-Note: the default admin password for rabbitMQ is password but we did override it to Test@123 as mentioned above:
-
-curl --user admin:Test@123 http://localhost:15672/api/vhosts
-curl --user admin:Test@123 "http://jfrog-platform-rabbitmq:15672"
-```
-
-SSH and verify the Xray server is up and functional
-```text
-kubectl exec -it $MY_HELM_RELEASE-xray-0 -n $MY_NAMESPACE -c xray-server -- bash
-Example:
-kubectl exec -it $MY_HELM_RELEASE-xray-0 -n $MY_NAMESPACE -c xray-server -- bash
-
-cd /opt/jfrog/xray/var/etc
-cat /opt/jfrog/xray/var/etc/system.yaml
-
-
-cd /opt/jfrog/xray/var/log
-cat /opt/jfrog/xray/var/log/xray-server-service.log
-tail -F /opt/jfrog/xray/var/log/xray-server-service.log
-```
 ---
 **Enable JAS**
 

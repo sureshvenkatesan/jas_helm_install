@@ -1,23 +1,33 @@
 {
-  "vhosts": [
+  "permissions": [
     {
-      "name": "xray"
+      "user": "admin",
+      "vhost": "/",
+      "configure": ".*",
+      "write": ".*",
+      "read": ".*"
+    },
+    {
+      "user": "admin",
+      "vhost": "xray_haq",
+      "configure": ".*",
+      "write": ".*",
+      "read": ".*"
     }
   ],
   "users": [
     {
       "name": "admin",
-      "password": "Test@123",
+      "password": "password",
       "tags": "administrator"
     }
   ],
-  "permissions": [
+  "vhosts": [
     {
-      "user": "admin",
-      "vhost": "xray",
-      "configure": ".*",
-      "write": ".*",
-      "read": ".*"
+      "name": "/"
+    },
+    {
+      "name": "xray_haq"
     }
   ],
   "policies": [
@@ -25,7 +35,7 @@
       "name": "ha-all",
       "apply-to": "all",
       "pattern": ".*",
-      "vhost": "xray",
+      "vhost": "/",
       "definition": {
         "ha-mode": "all",
         "ha-sync-mode": "automatic"
