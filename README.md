@@ -1,4 +1,6 @@
 
+## Step-by-Step install of Artifactory, Xray, JAS, Catalog, Curation
+
 Instead of installing Artifactory, Xray and JAS all in one shot (in AWS EKS or in GKE ), it is recommended to :
 ```text
 a) Create  the secrets ( for all user passwords, binarystore configuration , system.yaml etc) 
@@ -13,8 +15,13 @@ The steps to do the above are explained in this Readme.
 It also shows :
 - how to use the [envsubst](https://www.gnu.org/software/gettext/manual/html_node/envsubst-Invocation.html) command 
   to get the values to create the  secrets from environmental variables. 
-- the step-by-step approach to improvise the values.yaml using the [yaml-merger-py](https://github.com/Aref-Riant/yaml-merger-py) 
-  to generate the final values.yaml needed for the helm install.
+- the step-by-step approach to improvise the values.yaml to generate the final values.yaml needed for the helm install
+
+Note: I Initially used  [yaml-merger-py](https://github.com/Aref-Riant/yaml-merger-py) , [../../scripts/merge_yaml_with_comments.py](../../scripts/merge_yaml_with_comments.py) but these are not necessary now.
+We still need the [../../scripts/nest_yaml_with_comments.py](../../scripts/nest_yaml_with_comments.py)
+
+  
+Note: You can parse the https://github.com/jfrog/charts/blob/master/stable/jfrog-platform/values.yaml  with  https://yaml.vercel.app/ 
 
 ---
 ## Deploying in AWS EKS
@@ -140,11 +147,9 @@ helm install aws-load-balancer-controller \
 Once your cluster is all enabled, you can install the Jfrog platform using values.yaml that can be generated as explained in next section.
 
 ---
-## Steps to generate the helm values.yaml for the JPD installation
+## Steps to specify the helm values.yaml for step-by-step install of Artifactory, Xray, JAS, Catalog, Curation
 
 ### Prerequisites:
-
-You can parse the https://github.com/jfrog/charts/blob/master/stable/jfrog-platform/values.yaml   https://yaml.vercel.app/ 
 
 Please download the  python script to merge values.yaml files with best effort to preserve comments, formatting,
 and order of items from https://github.com/Aref-Riant/yaml-merger-py
