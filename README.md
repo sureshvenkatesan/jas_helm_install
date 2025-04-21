@@ -637,8 +637,8 @@ After sometime when the helm command exits it may fail with below error:
 Error: UPGRADE FAILED: pre-upgrade hooks failed: 1 error occurred:
         * job ps-jfrog-platform-release-pre-upgrade-check failed: BackoffLimitExceeded
 ```
+
 If below job has failed with "BackoffLimitExceeded" then delete the job:
-```
 
 ```
 kubectl get job -n $MY_NAMESPACE
