@@ -478,8 +478,8 @@ helm  upgrade --install $MY_HELM_RELEASE \
 --set artifactory.global.joinKeySecretName="joinkey-secret" \
 --version "${JFROG_PLATFORM_CHART_VERSION}" 
 ```
-Note: The artifactory pod is a statefulset and the size of the `artifactory.persistence.mountPath` i.e `/var/opt/jfrog/artifactory`  when the  ``artifactory.persistence.enabled` is `true` is set to 200Gi   when using the platform chart as in `artifactory.artifactory.persistence.size` ( see https://github.com/jfrog/charts/blob/master/stable/jfrog-platform/values.yaml#L285 ). 
-If you use GCP storage and set `artifactory.artifactory.persistence.customBinarystoreXmlSecret` and `artifactory.artifactory.persistence.googleStorage` this filestore will not be seen in the `/var/opt/jfrog/artifactory/data/artifactory`.
+Note: The artifactory pod is a statefulset and the size of the PVC is sepcified in `artifactory.persistence.mountPath` i.e `/var/opt/jfrog/artifactory`  when the  ``artifactory.persistence.enabled` is `true` and defaults to 200Gi   when using the platform chart as in `artifactory.artifactory.persistence.size` ( see https://github.com/jfrog/charts/blob/master/stable/jfrog-platform/values.yaml#L285 ). 
+If you use GCP storage and set `artifactory.artifactory.persistence.customBinarystoreXmlSecret` and `artifactory.artifactory.persistence.googleStorage` the `filestore` will not be seen under `/var/opt/jfrog/artifactory/data/artifactory`  i.,e PVC size does not include the googleStorage bucket size. The googleStorage usage can only be see from "Administration > Monitoring > Storage" in the Artitfactory UI.
 
 Simailarly the Xray pod statefulset PVC size is specified in `xray.common.persisitence.size` to 200Gi which I am overriding in [values/For_PROD_Setup/6_xray_db_passwords.yaml](values/For_PROD_Setup/6_xray_db_passwords.yaml) to 100Gi.
 But when using JAS it is recommended that this be increased to minimum of 400Gi  in one of the earlier T-shirt sizing in https://github.com/jfrog/charts/tree/master/stable/xray/sizing or "300 to 500 GB" .
