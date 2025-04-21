@@ -7,10 +7,14 @@ a) Create  the secrets ( for all user passwords, binarystore configuration , sys
 b) first install  Artifactory , login to it and set the Artifactory base url
 c) install Xray and verify it successfully connects to the Artifactory instance
 d) Do Xray DB Sync
-e) Then enable JAS
+e) Enable JAS
+f) Enable Package Catalog + Curation.
 ```
 
-The steps to do the above are explained in this Readme. 
+The steps to do the above using the [jfrog/platform](https://github.com/jfrog/charts/tree/master/stable/jfrog-platform) chart by using a nested values.yaml from the below child charts is explained in this Readme. 
+- [jfrog/artifactory](https://github.com/jfrog/charts/tree/master/stable/artifactory)
+- [jfrog/xray](https://github.com/jfrog/charts/tree/master/stable/xray) for Jfrog Xray, JAS
+- [catalog](https://github.com/jfrog/charts/tree/master/stable/catalog)
 
 It also shows :
 - how to use the [envsubst](https://www.gnu.org/software/gettext/manual/html_node/envsubst-Invocation.html) command 
@@ -645,18 +649,19 @@ helm  upgrade --install $MY_HELM_RELEASE \
 ```
 Note: In [values/For_PROD_Setup/6_xray_db_passwords.yaml](values/For_PROD_Setup/6_xray_db_passwords.yaml) I have set "JF_SHARED_RABBITMQ_VHOST" to "xray_haq" in `xray.common.extraEnvVars` 
 
-Why does it give these warnings?
+##### Issue1 : Why does it give these warnings?
 ```
 coalesce.go:298: warning: cannot overwrite table with non table for artifactory.postgresql.metrics.extraEnvVars (map[])
 coalesce.go:237: warning: skipped value for rabbitmq.initContainers: Not a table.
 ```
+##### Issue2: How to fix the "<$MY_HELM_RELEASE>-pre-upgrade-check pre-upgrade hooks failed" error ? 
 After sometime when the helm command exits it may fail with below error:
 ```
 Error: UPGRADE FAILED: pre-upgrade hooks failed: 1 error occurred:
         * job ps-jfrog-platform-release-pre-upgrade-check failed: BackoffLimitExceeded
 ```
 
-If below job has failed with "BackoffLimitExceeded" then delete the job:
+If "<$MY_HELM_RELEASE>-pre-upgrade-check" job has failed with "BackoffLimitExceeded" then delete the job:
 
 ```
 kubectl get job -n $MY_NAMESPACE
@@ -801,7 +806,7 @@ kubectl get secret $MY_HELM_RELEASE-load-definition -n $MY_NAMESPACE -o json | j
 ```
 The output is in [values/For_PROD_Setup/10_optional_load_definition.json](values/For_PROD_Setup/10_optional_load_definition.json) and it uses the password from `rabbitmq-admin-creds` specified in [values/For_PROD_Setup/6_xray_db_passwords.yaml](values/For_PROD_Setup/6_xray_db_passwords.yaml)
 
-What is the correct way to deploy xray so that the JF_SHARED_RABBITMQ_VHOST is either '/' or 'xray_haq' to match the `load_definition.json`  ?
+##### Issue3: What is the correct way to deploy xray so that the JF_SHARED_RABBITMQ_VHOST is either '/' or 'xray_haq' to match the `load_definition.json`  ?
 
 **Resolution:**
 That is why in [values/For_PROD_Setup/6_xray_db_passwords.yaml](values/For_PROD_Setup/6_xray_db_passwords.yaml) I have set "JF_SHARED_RABBITMQ_VHOST" to `"xray_haq"` in `xray.common.extraEnvVars` to resolve avoid using the Platform's `"classic"`` `'xray'` **vhost** in rabbitMQ.
@@ -868,7 +873,7 @@ helm  upgrade --install $MY_HELM_RELEASE \
 --set jas.healthcheck.enabled=true \
 --version "${JFROG_PLATFORM_CHART_VERSION}" 
 ```
-
+##### Issue4: Another "pre-upgrade hooks failed" when emnabling JAS:
 It may fail with:
 ```
 Error: UPGRADE FAILED: pre-upgrade hooks failed: 1 error occurred:
@@ -1016,7 +1021,7 @@ helm  upgrade --install $MY_HELM_RELEASE \
 --version "${JFROG_PLATFORM_CHART_VERSION}" 
 ```
 
-
+##### Issue5: Another "pre-upgrade hooks failed" when emnabling Curation and Package Catalog:
 If you see:
 ```
 coalesce.go:298: warning: cannot overwrite table with non table for artifactory.postgresql.metrics.extraEnvVars (map[])
