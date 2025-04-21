@@ -191,11 +191,13 @@ export CLOUD_PROVIDER=gcp
 export MY_NAMESPACE=ps-jfrog-platform
 export MY_HELM_RELEASE=ps-jfrog-platform-release
 
-export MASTER_KEY=$(openssl rand -hex 32)
+export RT_MASTER_KEY=$(openssl rand -hex 32)
 # Save this master key to reuse it later
-echo ${MASTER_KEY}
+echo ${RT_MASTER_KEY}
 # or you can hardcode it to
-export MASTER_KEY=02ba23e285e065d2a372b889ac3dbd51510dd0399875f95294312634f50b6960
+export RT_MASTER_KEY=02ba23e285e065d2a372b889ac3dbd51510dd0399875f95294312634f50b6960
+export XRAY_MASTER_KEY=33e1a43ac92be461ef98cec5b6120f21cf69cd005011c608529ddc33e7bacb7c
+export CATALOG_MASTER_KEY=e4d873b4e7d56657df61d63ba2989f468178c3f22440bd068ad5bb84cafb97ff
 
 export JOIN_KEY=$(openssl rand -hex 32)
 # Save this join key to reuse it later
@@ -289,10 +291,18 @@ Optional: I used the steps in [Creating only "CloudSql proxy" and secrets for "b
 
 **Master and Join Keys:**
 ```text
-kubectl delete secret masterkey-secret  -n $MY_NAMESPACE
+kubectl delete secret rt-masterkey-secret  -n $MY_NAMESPACE
 kubectl delete secret joinkey-secret   -n $MY_NAMESPACE
 
-kubectl create secret generic masterkey-secret --from-literal=master-key=${MASTER_KEY} -n $MY_NAMESPACE
+kubectl create secret generic rt-masterkey-secret --from-literal=master-key=${RT_MASTER_KEY} -n $MY_NAMESPACE
+# if using xray:
+kubectl delete secret xray-masterkey-secret  -n $MY_NAMESPACE
+kubectl create secret generic xray-masterkey-secret --from-literal=master-key=${XRAY_MASTER_KEY} -n $MY_NAMESPACE
+# if using catalog:
+kubectl delete secret catalog-masterkey-secret  -n $MY_NAMESPACE
+kubectl create secret generic catalog-masterkey-secret --from-literal=master-key=${CATALOG_MASTER_KEY} -n $MY_NAMESPACE
+
+# Same Join key is used by Artifactory, Xay and Catalog pods:
 kubectl create secret generic joinkey-secret --from-literal=join-key=${JOIN_KEY} -n $MY_NAMESPACE
 ```
 
@@ -459,14 +469,15 @@ helm  upgrade --install $MY_HELM_RELEASE \
 --namespace $MY_NAMESPACE jfrog/jfrog-platform  \
 --set gaUpgradeReady=true \
 --set global.versions.artifactory="${RT_VERSION}" \
---set artifactory.masterKeySecretName="masterkey-secret" \
---set artifactory.joinKeySecretName="joinkey-secret" \
+--set artifactory.global.masterKeySecretName="rt-masterkey-secret" \
+--set artifactory.global.joinKeySecretName="joinkey-secret" \
 --version "${JFROG_PLATFORM_CHART_VERSION}" 
 ```
 
 #### g) Troubleshooting Artifactory Startup:
 ```
-kubectl logs -f ps-jfrog-platform-release-artifactory-0
+kubectl logs -f ps-jfrog-platform-release-artifactory-0 -n $MY_NAMESPACE
+kubectl logs -f ps-jfrog-platform-release-artifactory-0 -c artifactory -n $MY_NAMESPACE
 kubectl logs  -l app=artifactory -n $MY_NAMESPACE --all-containers
 kubectl logs -f -l app=artifactory -n $MY_NAMESPACE --all-containers --max-log-requests=15
 kubectl delete pod ps-jfrog-platform-release-artifactory-0  -n $MY_NAMESPACE
@@ -479,6 +490,8 @@ Output:
 router frontend metadata onemodel event jfconnect access topology observability artifactory
 
 kubectl exec -it ps-jfrog-platform-release-artifactory-0 -c artifactory  -- cat /opt/jfrog/artifactory/var/etc/system.yaml
+kubectl exec -it ps-jfrog-platform-release-artifactory-0 -c artifactory  -- cat /opt/jfrog/artifactory/var/etc/security/master.key
+
 ```
 Set the base url the output you see from below in the `http://$SERVICE_HOSTNAME/ui/admin/configuration/general`:
 ```
@@ -605,21 +618,56 @@ helm  upgrade --install $MY_HELM_RELEASE \
 --namespace $MY_NAMESPACE jfrog/jfrog-platform  \
 --set gaUpgradeReady=true \
 --set global.versions.artifactory="${RT_VERSION}" \
---set artifactory.masterKeySecretName="masterkey-secret" \
---set artifactory.joinKeySecretName="joinkey-secret" \
+--set artifactory.global.masterKeySecretName="rt-masterkey-secret" \
+--set artifactory.global.joinKeySecretName="joinkey-secret" \
 --set global.versions.xray="${XRAY_VERSION}" \
---set xray.masterKeySecretName="masterkey-secret" \
---set xray.joinKeySecretName="joinkey-secret" \
+--set xray.global.masterKeySecretName="xray-masterkey-secret" \
+--set xray.global.joinKeySecretName="joinkey-secret" \
 --version "${JFROG_PLATFORM_CHART_VERSION}" 
 ```
+Note: In [values/For_PROD_Setup/6_xray_db_passwords.yaml](values/For_PROD_Setup/6_xray_db_passwords.yaml) I have set "JF_SHARED_RABBITMQ_VHOST" to "xray_haq" in `xray.common.extraEnvVars` 
 
 Why does it give these warnings?
 ```
 coalesce.go:298: warning: cannot overwrite table with non table for artifactory.postgresql.metrics.extraEnvVars (map[])
 coalesce.go:237: warning: skipped value for rabbitmq.initContainers: Not a table.
 ```
+After sometime when the helm command exits it may fail with below error:
+```
+Error: UPGRADE FAILED: pre-upgrade hooks failed: 1 error occurred:
+        * job ps-jfrog-platform-release-pre-upgrade-check failed: BackoffLimitExceeded
+```
+If below job has failed with "BackoffLimitExceeded" then delete the job:
+```
 
+```
+kubectl get job -n $MY_NAMESPACE
+NAME                                          STATUS   COMPLETIONS   DURATION   AGE
+ps-jfrog-platform-release-pre-upgrade-check   Failed   0/1           8m33s      8m33s
+```
 
+```
+kubectl describe job ps-jfrog-platform-release-pre-upgrade-check -n $MY_NAMESPACE
+Events:
+  Type     Reason                Age    From            Message
+  ----     ------                ----   ----            -------
+  Normal   SuccessfulCreate      12m    job-controller  Created pod: ps-jfrog-platform-release-pre-upgrade-check-zbngm
+  Warning  BackoffLimitExceeded  9m53s  job-controller  Job has reached the specified backoff limit
+```
+Delete the job and rerun the above "helm  upgrade --install" command and then after a whiel xray should start:
+```
+kubectl delete job ps-jfrog-platform-release-pre-upgrade-check -n $MY_NAMESPACE
+```
+
+You can tail the Artifactory's access log to see that xray connects to Access service:
+```
+kubectl logs -f ps-jfrog-platform-release-artifactory-0 -c access -n $MY_NAMESPACE
+```
+You should find the log entries simialr to the following:
+```
+2025-04-21T05:19:42.084Z [jfac ] [INFO ] [5045b8a5b8ff60fd] [.j.a.s.s.r.JoinServiceImpl:109] [27.0.0.1-8040-exec-6] - Router join request: using external topology so skipping router NodeId and IP validation
+2025-04-21T05:19:42.101Z [jfac ] [INFO ] [5045b8a5b8ff60fd] [.r.ServiceTokenProviderImpl:89] [27.0.0.1-8040-exec-6] - Cluster join: Successfully joined jfrou@01jsbckda0wv9paf2k746h0xp9 with node id ps-jfrog-platform-release-xray-0
+```
 
 #### f) Troubleshoot Xray setup:
 ```
@@ -633,6 +681,7 @@ kubectl logs  -l app=xray -n $MY_NAMESPACE --all-containers -n $MY_NAMESPACE
 kubectl logs -f -l app=xray -n $MY_NAMESPACE --all-containers --max-log-requests=8 -n $MY_NAMESPACE
 kubectl logs -f ps-jfrog-platform-release-xray-0 -c xray-server -n $MY_NAMESPACE
 kubectl exec -it ps-jfrog-platform-release-xray-0 -c xray-server -- bash
+kubectl exec -it ps-jfrog-platform-release-xray-0 -c xray-server  -- cat /opt/jfrog/xray/var/etc/security/master.key
 kubectl exec -it ps-jfrog-platform-release-xray-0 -c xray-server  -- cat /opt/jfrog/xray/var/etc/system.yaml
 ##kubectl exec -it ps-jfrog-platform-release-xray-0 -c xray-server  -- rm -rf  /opt/jfrog/xray/var/etc/system.yaml
 
@@ -650,7 +699,7 @@ ps-jfrog-platform-release-xray-pre-upgrade-hook-5fqhr -n $MY_NAMESPACE
 
 ```
 
-In the xray pod xray-service.log I see:
+If in  the xray pod xray-service.log you see:
 ```
 JF_SHARED_DATABASE_URL              : postgres://cloudsql-proxy:5432/xray?sslmode=disable
 JF_SHARED_RABBITMQ_VHOST            : xray
@@ -677,7 +726,7 @@ JF_SHARED_NODE_NAME                 : ps-jfrog-platform-release-xray-0
 2025-04-18T02:21:29.900Z [jfxr ] [ERROR] [dee752f0da95b279] [mq_connector:346              ] [MainServer                      ] Error connecting to rabbit message queue check mq settings. Error: Exception (403) Reason: "no access to this vhost"
 ```
 
-In the rabbimq pod (ps-jfrog-platform-release-rabbitmq-0) I see:
+In the rabbimq pod (ps-jfrog-platform-release-rabbitmq-0) you see:
 ```
 2025-04-18 02:18:27.968508+00:00 [error] <0.931.0> Error on AMQP connection <0.931.0> (10.1.0.23:58562 -> 10.1.1.10:5672, user: 'admin', state: opening):
 2025-04-18 02:18:27.968508+00:00 [error] <0.931.0> vhost xray not found
@@ -770,6 +819,9 @@ To get this working I had to the following:
 Why are all these steps required ? 
 What is the correct way to deploy xray so that the JF_SHARED_RABBITMQ_VHOST is either '/' or 'xray_haq' to match the `load_definition.json`  ?
 
+**Resolution:**
+That is why in [values/For_PROD_Setup/6_xray_db_passwords.yaml](values/For_PROD_Setup/6_xray_db_passwords.yaml) I have set "JF_SHARED_RABBITMQ_VHOST" to "xray_haq" in `xray.common.extraEnvVars` to resolve avoid using the Platform "classic": 'xray' vhost in rabbitMQ.
+
 ---
 ### 7. Deploying JAS
 
@@ -797,11 +849,11 @@ helm  upgrade --install $MY_HELM_RELEASE \
 --namespace $MY_NAMESPACE jfrog/jfrog-platform \
 --set gaUpgradeReady=true \
 --set global.versions.artifactory="${RT_VERSION}" \
---set artifactory.masterKeySecretName="masterkey-secret" \
---set artifactory.joinKeySecretName="joinkey-secret" \
+--set artifactory.global.masterKeySecretName="rt-masterkey-secret" \
+--set artifactory.global.joinKeySecretName="joinkey-secret" \
 --set global.versions.xray="${XRAY_VERSION}" \
---set xray.masterKeySecretName="masterkey-secret" \
---set xray.joinKeySecretName="joinkey-secret" \
+--set xray.global.masterKeySecretName="xray-masterkey-secret" \
+--set xray.global.joinKeySecretName="joinkey-secret" \
 --set jas.healthcheck.enabled=true \
 --version "${JFROG_PLATFORM_CHART_VERSION}" 
 ```
@@ -811,7 +863,7 @@ It may fail with:
 Error: UPGRADE FAILED: pre-upgrade hooks failed: 1 error occurred:
         * timed out waiting for the condition
 
-k get pods
+kubectl get pods -n $MY_NAMESPACE
 NAME                                                           READY   STATUS      RESTARTS      AGE
 cloudsql-proxy-67cfcf5c75-4qb7k                                1/1     Running     1 (39m ago)   42m
 ps-jfrog-platform-release-artifactory-0                        10/10   Running     0             28m
@@ -851,16 +903,26 @@ watch kubectl get pods  -n $MY_NAMESPACE
 As per [JFrog Advanced Security Readiness Checking](https://jfrog.com/help/r/jfrog-installation-setup-documentation/jfrog-advanced-security-readiness-checking) :
 Call the following URL: https://your.domain/ui/api/v1/jfconnect/entitlements and find the JFrog Advanced Security entitlements, search for ‘secrets_detection’ in the returned response.
 ```
+export SERVICE_HOSTNAME=$(kubectl get svc --namespace ps-jfrog-platform ps-jfrog-platform-release-artifactory-nginx --template "{{ (index .status.loadBalancer.ingress 0).ip }}")
+```
+
+Generate an admin access token and then do:
+```
+export MYTOKEN="YOUR_ADMIN_ACCESS_TOKEN"
+```
+
+Then run
+```
 curl -X GET -H "Content-Type: application/json" -H "X-Requested-With: XMLHttpRequest" -H "Accept: */*" \
 -H "Cookie: __Host-REFRESHTOKEN=*;__Host-ACCESSTOKEN=$MYTOKEN" \
-'http://35.229.53.7/ui/api/v1/jfconnect/entitlements' | jq '.entitlements[] | select(.name == "secrets_detection")'
+"http://$SERVICE_HOSTNAME/ui/api/v1/jfconnect/entitlements" | jq '.entitlements[] | select(.name == "secrets_detection")'
 
 
 or 
 
 curl -X GET -H "Content-Type: application/json" -H "X-Requested-With: XMLHttpRequest" -H "Accept: */*" \
 -H "Cookie: REFRESHTOKEN=*;ACCESSTOKEN=$MYTOKEN" \
-'http://35.229.53.7/ui/api/v1/jfconnect/entitlements' | jq '.entitlements[] | select(.name == "secrets_detection")'
+"http://$SERVICE_HOSTNAME/ui/api/v1/jfconnect/entitlements" | jq '.entitlements[] | select(.name == "secrets_detection")'
 
 ```
 You will get a list of entitlements:
@@ -880,6 +942,16 @@ In this check for
   "blockingQuantity": 1,
   "dependentOnAction": "xray_advanced_actions"
 }
+
+Also you should see following in xray service logs:
+```
+kubectl logs -f ps-jfrog-platform-release-xray-0 -c xray-server -n $MY_NAMESPACE | grep -i jas
+```
+Output:
+```
+2025-04-21T05:20:36.552Z [jfxr ] [INFO ] [323448ee7ba33858] [job_manager:630               ] [MainServer                      ] Scheduling JAS Health Check
+2025-04-21T05:20:36.559Z [jfxr ] [INFO ] [323448ee7ba33858] [job_manager:658               ] [MainServer                      ] JAS Health Check is disabled, not setting healthCheckApiSetAndEnabled: <nil>, jasConfig.EnableHealthCheck: true
+```
 
 ---
 
@@ -920,16 +992,19 @@ helm  upgrade --install $MY_HELM_RELEASE \
 --namespace $MY_NAMESPACE jfrog/jfrog-platform \
 --set gaUpgradeReady=true \
 --set global.versions.artifactory="${RT_VERSION}" \
---set artifactory.masterKeySecretName="masterkey-secret" \
---set artifactory.joinKeySecretName="joinkey-secret" \
+--set artifactory.global.masterKeySecretName="rt-masterkey-secret" \
+--set artifactory.global.joinKeySecretName="joinkey-secret" \
 --set global.versions.xray="${XRAY_VERSION}" \
---set xray.masterKeySecretName="masterkey-secret" \
---set xray.joinKeySecretName="joinkey-secret" \
+--set xray.global.masterKeySecretName="xray-masterkey-secret" \
+--set xray.global.joinKeySecretName="joinkey-secret" \
 --set jas.healthcheck.enabled=true \
---set catalog.masterKeySecretName="masterkey-secret" \
---set catalog.joinKeySecretName="joinkey-secret" \
+--set catalog.global.masterKeySecretName="catalog-masterkey-secret" \
+--set catalog.global.joinKeySecretName="joinkey-secret" \
 --version "${JFROG_PLATFORM_CHART_VERSION}" 
 ```
+
+--set catalog.joinKey="EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE" \
+
 If you see:
 ```
 coalesce.go:298: warning: cannot overwrite table with non table for artifactory.postgresql.metrics.extraEnvVars (map[])
@@ -947,7 +1022,7 @@ kubectl delete pod ps-jfrog-platform-release-pre-upgrade-check-cs9rq ps-jfrog-pl
 
 Check the xray-server-service.log :
 ```
-kubectl logs -f ps-jfrog-platform-release-xray-0 -c xray-server -n $MY_NAMESPACE
+kubectl logs -f ps-jfrog-platform-release-xray-0 -c xray-server -n $MY_NAMESPACE | grep -i  "jas\|curation"
 ```
 You should see:
 
@@ -957,10 +1032,14 @@ You should see:
 2025-04-18T21:28:46.913Z [jfxr ] [INFO ] [ee53923db4ef22cc] [task:86                       ] [MainServer                      ] curationAuditPackagesRetention task is scheduled
 ```
 
+### Catalog startup troubleshooting:
+```
 kubectl describe pod ps-jfrog-platform-release-catalog -n $MY_NAMESPACE
 kubectl logs -f ps-jfrog-platform-release-catalog -n $MY_NAMESPACE
 kubectl logs -f ps-jfrog-platform-release-catalog-869975b4d7-xjgl9  -n $MY_NAMESPACE
-kubectl logs -f ps-jfrog-platform-release-catalog-f8bc8fbdc-z9drq -c router -n $MY_NAMESPACE
+kubectl logs -f ps-jfrog-platform-release-catalog-5bd7965879-qrlgl -c router -n $MY_NAMESPACE
+
+
 
 kubectl get pod ps-jfrog-platform-release-catalog-869975b4d7-xjgl9 -n $MY_NAMESPACE -o jsonpath='{.spec.containers[*].name}' 
 output : catalog router
@@ -968,8 +1047,16 @@ output : catalog router
 kubectl logs -f ps-jfrog-platform-release-artifactory-0 -c access  -n $MY_NAMESPACE
 
 kubectl exec -it ps-jfrog-platform-release-xray-0 -c xray-server -- bash
+kubectl exec -it ps-jfrog-platform-release-catalog-869975b4d7-v4d52 -c router -n $MY_NAMESPACE -- cat /opt/jfrog/catalog/var/etc/security/join.key
+```
+```
 kubectl exec -it ps-jfrog-platform-release-catalog-869975b4d7-xjgl9 -c catalog  -- cat /opt/jfrog/catalog/var/etc/system.yaml
+```
+Output:
 
+```
+
+Why did the artifactory joinKey change to EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE ?
 ```
 catalog:
     central:
@@ -994,23 +1081,28 @@ Catalog app_health API -
 
 GET <base-url>/catalog/api/v1/system/app_health
 
-Wehn I access http://35.229.53.7/xray/ui/curation/internal/health why do I get "Catalog is not accessible!" ?
+```
+export SERVICE_HOSTNAME=$(kubectl get svc --namespace ps-jfrog-platform ps-jfrog-platform-release-artifactory-nginx --template "{{ (index .status.loadBalancer.ingress 0).ip }}")
+```
 
+When I access "http://$SERVICE_HOSTNAME/xray/ui/curation/internal/health" why do I get "Catalog is not accessible!" ?
+Output:
+```
 {"JFConnect":"OK","Entitlements":"OK","Catalog":"Catalog is not accessible!","RTJFConnectEnablement":"OK"}
-
+```
 
 Call the following URL: https://your.domain/ui/api/v1/jfconnect/entitlements and find the JFrog Catalog entitlements, search for ‘curation’ in the returned response.
 ```
 curl -X GET -H "Content-Type: application/json" -H "X-Requested-With: XMLHttpRequest" -H "Accept: */*" \
 -H "Cookie: __Host-REFRESHTOKEN=*;__Host-ACCESSTOKEN=$MYTOKEN" \
-'http://35.229.53.7/ui/api/v1/jfconnect/entitlements' | jq '.entitlements[] | select(.name == "curation")'
+"http://$SERVICE_HOSTNAME/ui/api/v1/jfconnect/entitlements" | jq '.entitlements[] | select(.name == "curation")'
 
 
 or 
 
 curl -X GET -H "Content-Type: application/json" -H "X-Requested-With: XMLHttpRequest" -H "Accept: */*" \
 -H "Cookie: REFRESHTOKEN=*;ACCESSTOKEN=$MYTOKEN" \
-'http://35.229.53.7/ui/api/v1/jfconnect/entitlements' | jq '.entitlements[] | select(.name == "curation")'
+"http://$SERVICE_HOSTNAME/ui/api/v1/jfconnect/entitlements" | jq '.entitlements[] | select(.name == "curation")'
 ```
 Output:
 ```

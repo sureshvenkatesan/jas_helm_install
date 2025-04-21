@@ -9,8 +9,9 @@ global:
 
 
   versions:
-    artifactory: 7.59.11
-    xray: 3.76.7
+    # As of Apr 16, 2025
+    artifactory: 7.104.15
+    xray: 3.111.24
 # For external DB
   database:
     # If you are using external postgresql, set initDBCreation: false
@@ -21,8 +22,9 @@ postgresql:
 
 artifactory:
   enabled: true
-  joinKeySecretName: joinkey-secret
-  masterKeySecretName: masterkey-secret
+  global:
+    joinKeySecretName: joinkey-secret
+    masterKeySecretName: rt-masterkey-secret
   probes:
     timeoutSeconds: 15
   mc:
@@ -60,18 +62,18 @@ artifactory:
       secret: artifactory-license
       dataKey: artifactory.lic
 
-    replicaCount: 1
+    # replicaCount: 1
 
-    resources:
-      requests:
-        memory: "4Gi"
-        cpu: "2"
-      limits:
-        memory: "6Gi"
-        cpu: "4"
-    javaOpts:
-      xms: "4g"
-      xmx: "4g"  
+    # resources:
+    #   requests:
+    #     memory: "4Gi"
+    #     cpu: "2"
+    #   limits:
+    #     memory: "6Gi"
+    #     cpu: "4"
+    # javaOpts:
+    #   xms: "4g"
+    #   xmx: "4g"  
 
 
 
@@ -136,4 +138,7 @@ redis:
   enabled: false
 
 pdnServer:
+  enabled: false
+
+catalog:
   enabled: false

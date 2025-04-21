@@ -22,8 +22,9 @@ postgresql:
 
 artifactory:
   enabled: true
-  joinKeySecretName: joinkey-secret
-  masterKeySecretName: masterkey-secret
+  global:
+    joinKeySecretName: joinkey-secret
+    masterKeySecretName: rt-masterkey-secret
   probes:
     timeoutSeconds: 15
   mc:
@@ -145,4 +146,7 @@ redis:
   enabled: false
 
 pdnServer:
+  enabled: false
+
+catalog:
   enabled: false

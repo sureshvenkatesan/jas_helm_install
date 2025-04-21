@@ -3,8 +3,9 @@ catalog:
   replicaCount: 1
   # jfrogUrl: "http://ps-jfrog-platform-release-artifactory:8082"
   jfrogUrl: '{{ include "jfrog-platform.jfrogUrl" . }}'
-  masterKeySecretName: masterkey-secret
-  joinKeySecretName: joinkey-secret
+  global:
+    joinKeySecretName: joinkey-secret
+    masterKeySecretName: catalog-masterkey-secret
   extraSystemYaml:
     shared:
       logging:
