@@ -580,9 +580,10 @@ to "guest" .It can be set to "admin" only as value and not as secrert as per
 https://github.com/bitnami/charts/blob/main/bitnami/rabbitmq/values.yaml#L155
 
 Also to pass the rabbitmq password as secret use the key as `rabbitmq-password` 
-
+```
 kubectl create secret generic rabbitmq-admin-creds \
 --from-literal=rabbitmq-password=$MY_RABBITMQ_ADMIN_USER_PASSWORD -n $MY_NAMESPACE 
+```
 <!-- --from-literal=url=amqp://$MY_HELM_RELEASE-rabbitmq:5672  -->
 
 This is used in [6_xray_db_passwords.yaml](values/For_PROD_Setup/6_xray_db_passwords.yaml)
@@ -742,7 +743,7 @@ Default "classic": '/'
 Platform "classic": 'xray'
 New HA QuorumQueues: 'xray_haq'
 ```
-So how to specify that the vhost is either '/' or 'xray_haq' as only these 2 are available in the  `load_definition.json` as per below command:
+So how to specify that the vhost is either '/' or 'xray_haq' as only these 2 are available in the  `load_definition.json` as per below command ? :
 ```
 kubectl get secret $MY_HELM_RELEASE-load-definition -n $MY_NAMESPACE -o json | jq -r '.data["load_definition.json"]' | base64 -d
 
@@ -820,7 +821,7 @@ Why are all these steps required ?
 What is the correct way to deploy xray so that the JF_SHARED_RABBITMQ_VHOST is either '/' or 'xray_haq' to match the `load_definition.json`  ?
 
 **Resolution:**
-That is why in [values/For_PROD_Setup/6_xray_db_passwords.yaml](values/For_PROD_Setup/6_xray_db_passwords.yaml) I have set "JF_SHARED_RABBITMQ_VHOST" to "xray_haq" in `xray.common.extraEnvVars` to resolve avoid using the Platform "classic": 'xray' vhost in rabbitMQ.
+That is why in [values/For_PROD_Setup/6_xray_db_passwords.yaml](values/For_PROD_Setup/6_xray_db_passwords.yaml) I have set "JF_SHARED_RABBITMQ_VHOST" to `"xray_haq"` in `xray.common.extraEnvVars` to resolve avoid using the Platform's `"classic"`` `'xray'` **vhost** in rabbitMQ.
 
 ---
 ### 7. Deploying JAS
@@ -932,6 +933,7 @@ You will get a list of entitlements:
 ],"enforcementOn":{"global":false,"all":false,"artifactory":false,"distribution":false,"mc":false,"insight":false,"catalog":false,"xray":true,"runtime":true,"event":false,"metadata":false,"access":true,"client":false,"client-vue3":false,"frontend":false,"analysis":false,"persist":false,"indexer":false,"policy_enforcer":false,"insight_scheduler":false,"elastic_search":false,"insight_executor":false,"insight_server2":false,"replicator":false,"jfconnect":false,"jflink":false,"router":false,"integration":false,"tracker":false,"pipelines":false,"observability":false,"worker":false,"xsc":false,"rtfs":false,"lifecycle":false,"evidence":false,"enrichment":false,"application":false,"onemodel":false,"topology":false},"isJfConnectEnabled":true}
 ```
 In this check for 
+```
 {
   "name": "secrets_detection",
   "value": 1,
@@ -942,6 +944,7 @@ In this check for
   "blockingQuantity": 1,
   "dependentOnAction": "xray_advanced_actions"
 }
+```
 
 Also you should see following in xray service logs:
 ```
@@ -1437,7 +1440,7 @@ helm  upgrade --install $MY_HELM_RELEASE \
 
 ---
 
-
+### FAQs:
 How to set the artifactory's artifactory.artifactory.replicaCount to 1 ?
 
 To edit the replica count of a StatefulSet in Kubernetes there are multiple options:
