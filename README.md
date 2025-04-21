@@ -1148,9 +1148,13 @@ Output:
 }
 ```
 
-
+#### Ref Links:
+- https://github.com/ps-jfrog/jfrog-helm-values
+- https://charts.jfrog.io/
+- [Helm Charts for Advanced Users](https://jfrog.com/help/r/jfrog-installation-setup-documentation/helm-charts-for-advanced-users)
 
 ---
+
 
 <!-- 
 #### Rabbitmq configuration:
