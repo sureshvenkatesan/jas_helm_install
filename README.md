@@ -1021,7 +1021,7 @@ helm  upgrade --install $MY_HELM_RELEASE \
 --version "${JFROG_PLATFORM_CHART_VERSION}" 
 ```
 
-##### Issue5: Another "pre-upgrade hooks failed" when emnabling Curation and Package Catalog:
+##### Issue5: Another "pre-upgrade hooks failed" when enabling Curation and Package Catalog:
 If you see:
 ```
 coalesce.go:298: warning: cannot overwrite table with non table for artifactory.postgresql.metrics.extraEnvVars (map[])
