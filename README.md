@@ -1003,7 +1003,6 @@ helm  upgrade --install $MY_HELM_RELEASE \
 --version "${JFROG_PLATFORM_CHART_VERSION}" 
 ```
 
---set catalog.joinKey="EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE" \
 
 If you see:
 ```
@@ -1049,14 +1048,24 @@ kubectl logs -f ps-jfrog-platform-release-artifactory-0 -c access  -n $MY_NAMESP
 kubectl exec -it ps-jfrog-platform-release-xray-0 -c xray-server -- bash
 kubectl exec -it ps-jfrog-platform-release-catalog-869975b4d7-v4d52 -c router -n $MY_NAMESPACE -- cat /opt/jfrog/catalog/var/etc/security/join.key
 ```
+Yopu should see a catalog pod running:
+```
+kubectl  get pod --namespace $MY_NAMESPACE
+
+NAME                                                           READY   STATUS    RESTARTS        AGE
+cloudsql-proxy-67cfcf5c75-cm2wq                                1/1     Running   1 (14m ago)     16m
+ps-jfrog-platform-release-artifactory-0                        10/10   Running   0               16m
+ps-jfrog-platform-release-artifactory-nginx-697c454558-qlnkd   1/1     Running   1 (14m ago)     16m
+ps-jfrog-platform-release-catalog-649b8fd567-hwd9v             2/2     Running   3 (7m59s ago)   14m
+ps-jfrog-platform-release-rabbitmq-0                           1/1     Running   0               16m
+ps-jfrog-platform-release-xray-0                               7/7     Running   0               6m1s
+```
+
 ```
 kubectl exec -it ps-jfrog-platform-release-catalog-869975b4d7-xjgl9 -c catalog  -- cat /opt/jfrog/catalog/var/etc/system.yaml
 ```
 Output:
 
-```
-
-Why did the artifactory joinKey change to EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE ?
 ```
 catalog:
     central:
@@ -1074,7 +1083,9 @@ shared:
         application:
             enabled: true
             level: info
-```    
+``` 
+
+
 #### d) Check the Catalog health 
 http://35.229.53.7/catalog/api/v1/system/app_health
 Catalog app_health API - 
