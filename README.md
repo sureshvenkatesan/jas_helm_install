@@ -224,7 +224,7 @@ export RT_DATABASE_USER=artifactory
 export RT_DATABASE_PASSWORD=artifactory
 export ARTIFACTORY_DB=artifactory
 
-export MY_RABBITMQ_ADMIN_USER_PASSWORD=password
+export MY_RABBITMQ_ADMIN_USER_PASSWORD=password1
 export XRAY_DATABASE_USER=xray
 export XRAY_DATABASE_PASSWORD=xray
 export XRAY_DB=xray
@@ -587,6 +587,8 @@ otherwise use:
 bash decode_secret.sh <secret-to-decrypt>  <namespace>
 ```
 #### b) Secret to override the xray system yaml
+**Note:** Secret to override the xray system.yaml is needed for Xray versions below v3.118 (XRAY-109797)  to set the
+share.rabbitMq.password via the `xray-custom-systemyaml`. For Xray versions >=v3.118 you an skip this step.
 ```
 envsubst < 8_xray_system_yaml.tmpl > tmp2/8_xray_system_yaml.yaml
 
@@ -594,7 +596,7 @@ kubectl delete  secret xray-custom-systemyaml -n $MY_NAMESPACE
 kubectl create secret generic xray-custom-systemyaml --from-file=system.yaml=tmp2/8_xray_system_yaml.yaml \
 -n $MY_NAMESPACE
 ```
-
+ 
 #### c) Secret for Rabbitmq admin password:
 
 The rabbitmq user name as per https://github.com/jfrog/charts/blob/master/stable/xray/values.yaml#L514 is hardcoded
@@ -627,16 +629,18 @@ python yaml-merger.py tmp/3_mergedfile.yaml 6_xray_db_passwords_pod_size-values-
 <!-- Override with the 6_xray_db_passwords_pod_size-values-small.yaml for TEST environment or 
    6_xray_db_passwords_pod_size-values-large.yaml for PROD -->
 
-Here is the helm command:
+Here is the helm command for Xray versions below v3.118 (XRAY-109797) :
 
 ```
+envsubst < 6_xray_db_passwords.tmpl > tmp2/6_xray_db_passwords.yaml
+
 helm  upgrade --install $MY_HELM_RELEASE \
 -f 0_values-artifactory-xray-platform_prod_$CLOUD_PROVIDER.yaml \
 -f 1_artifactory-small-nested.yaml \
 -f 2_artifactory_db_passwords.yaml \
 -f 3_artifactory_admin_user.yaml  \
 -f 6_xray-xsmall-nested.yaml \
--f 6_xray_db_passwords.yaml \
+-f tmp2/6_xray_db_passwords.yaml \
 -f 8_override_xray_system_yaml_in_values.yaml \
 --namespace $MY_NAMESPACE jfrog/jfrog-platform  \
 --set gaUpgradeReady=true \
@@ -648,6 +652,27 @@ helm  upgrade --install $MY_HELM_RELEASE \
 --set xray.global.joinKeySecretName="joinkey-secret" \
 --version "${JFROG_PLATFORM_CHART_VERSION}" 
 ```
+Note: Have to use "-f 8_override_xray_system_yaml_in_values.yaml"
+
+Here is the helm command for Xray versions >= v3.118 (XRAY-109797 fixed) :
+
+helm  upgrade --install $MY_HELM_RELEASE \
+-f 0_values-artifactory-xray-platform_prod_$CLOUD_PROVIDER.yaml \
+-f 1_artifactory-small-nested.yaml \
+-f 2_artifactory_db_passwords.yaml \
+-f 3_artifactory_admin_user.yaml  \
+-f 6_xray-xsmall-nested.yaml \
+-f 6_xray_db_passwords.yaml \
+--namespace $MY_NAMESPACE jfrog/jfrog-platform  \
+--set gaUpgradeReady=true \
+--set global.versions.artifactory="${RT_VERSION}" \
+--set artifactory.global.masterKeySecretName="rt-masterkey-secret" \
+--set artifactory.global.joinKeySecretName="joinkey-secret" \
+--set global.versions.xray="${XRAY_VERSION}" \
+--set xray.global.masterKeySecretName="xray-masterkey-secret" \
+--set xray.global.joinKeySecretName="joinkey-secret" \
+--version "${JFROG_PLATFORM_CHART_VERSION}" 
+
 Note: In [values/For_PROD_Setup/6_xray_db_passwords.yaml](values/For_PROD_Setup/6_xray_db_passwords.yaml) I have set "JF_SHARED_RABBITMQ_VHOST" to "xray_haq" in `xray.common.extraEnvVars` 
 
 ##### Issue1 : Why does it give these warnings?
@@ -655,7 +680,10 @@ Note: In [values/For_PROD_Setup/6_xray_db_passwords.yaml](values/For_PROD_Setup/
 coalesce.go:298: warning: cannot overwrite table with non table for artifactory.postgresql.metrics.extraEnvVars (map[])
 coalesce.go:237: warning: skipped value for rabbitmq.initContainers: Not a table.
 ```
+It is coming from Postgresql and Rabbitmq charts and it does not affect the installation.
+
 ##### Issue2: How to fix the "<$MY_HELM_RELEASE>-pre-upgrade-check pre-upgrade hooks failed" error ? 
+At one time I got this error but did not get this issue in next 2 attempts . SO we can ignore this issue.
 After sometime when the helm command exits it may fail with below error:
 ```
 Error: UPGRADE FAILED: pre-upgrade hooks failed: 1 error occurred:
@@ -687,7 +715,7 @@ You can tail the Artifactory's access log to see that xray connects to Access se
 ```
 kubectl logs -f ps-jfrog-platform-release-artifactory-0 -c access -n $MY_NAMESPACE
 ```
-You should find the log entries simialr to the following:
+You should find the log entries similarto the following:
 ```
 2025-04-21T05:19:42.084Z [jfac ] [INFO ] [5045b8a5b8ff60fd] [.j.a.s.s.r.JoinServiceImpl:109] [27.0.0.1-8040-exec-6] - Router join request: using external topology so skipping router NodeId and IP validation
 2025-04-21T05:19:42.101Z [jfac ] [INFO ] [5045b8a5b8ff60fd] [.r.ServiceTokenProviderImpl:89] [27.0.0.1-8040-exec-6] - Cluster join: Successfully joined jfrou@01jsbckda0wv9paf2k746h0xp9 with node id ps-jfrog-platform-release-xray-0
@@ -735,12 +763,15 @@ cat /opt/bitnami/rabbitmq/etc/rabbitmq/rabbitmq.conf
 rabbitmqctl status
 rabbitmqctl cluster_status
 rabbitmqctl list_queues
+```
 
-SSH to the rabbitmq pod and run below curl command:
-Note: the default admin password for rabbitMQ is password but we did override it to Test@123 as mentioned above:
+Note: the default admin password for rabbitMQ is password but we did override it with "$MY_RABBITMQ_ADMIN_USER_PASSWORD" as mentioned above:
 
-curl --user admin:Test@123 http://localhost:15672/api/vhosts
-curl --user admin:Test@123 "http://jfrog-platform-rabbitmq:15672"
+Run below curl commands to check if the "$MY_RABBITMQ_ADMIN_USER_PASSWORD" works:
+```
+kubectl exec -it $MY_HELM_RELEASE-rabbitmq-0  -n $MY_NAMESPACE -- curl --user "admin:$MY_RABBITMQ_ADMIN_USER_PASSWORD" http://localhost:15672/api/vhosts
+
+kubectl exec -it $MY_HELM_RELEASE-rabbitmq-0  -n $MY_NAMESPACE -- curl  --user "admin:$MY_RABBITMQ_ADMIN_USER_PASSWORD" "http://$MY_HELM_RELEASE-rabbitmq:15672/api/vhosts"
 ```
 
 SSH and verify the Xray server is up and functional
@@ -851,7 +882,7 @@ After that enable JAS in the helm values.yaml - we will use [9_enable_JAS.yaml](
 
 Next do the helm upgrade to install / enable JAS:
 
-Here is the helm command:
+Here is the helm command for Xray versions below v3.118 (XRAY-109797) :
 
 ```
 helm  upgrade --install $MY_HELM_RELEASE \
@@ -860,8 +891,30 @@ helm  upgrade --install $MY_HELM_RELEASE \
 -f 2_artifactory_db_passwords.yaml \
 -f 3_artifactory_admin_user.yaml  \
 -f 6_xray-xsmall-nested.yaml \
--f 6_xray_db_passwords.yaml \
+-f tmp2/6_xray_db_passwords.yaml \
 -f 8_override_xray_system_yaml_in_values.yaml \
+-f 9_enable_JAS.yaml \
+--namespace $MY_NAMESPACE jfrog/jfrog-platform \
+--set gaUpgradeReady=true \
+--set global.versions.artifactory="${RT_VERSION}" \
+--set artifactory.global.masterKeySecretName="rt-masterkey-secret" \
+--set artifactory.global.joinKeySecretName="joinkey-secret" \
+--set global.versions.xray="${XRAY_VERSION}" \
+--set xray.global.masterKeySecretName="xray-masterkey-secret" \
+--set xray.global.joinKeySecretName="joinkey-secret" \
+--set jas.healthcheck.enabled=true \
+--version "${JFROG_PLATFORM_CHART_VERSION}" 
+```
+
+Here is the helm command for Xray versions >= v3.118 (XRAY-109797 fixed) :
+```
+helm  upgrade --install $MY_HELM_RELEASE \
+-f 0_values-artifactory-xray-platform_prod_$CLOUD_PROVIDER.yaml \
+-f 1_artifactory-small-nested.yaml \
+-f 2_artifactory_db_passwords.yaml \
+-f 3_artifactory_admin_user.yaml  \
+-f 6_xray-xsmall-nested.yaml \
+-f 6_xray_db_passwords.yaml \
 -f 9_enable_JAS.yaml \
 --namespace $MY_NAMESPACE jfrog/jfrog-platform \
 --set gaUpgradeReady=true \
@@ -891,25 +944,16 @@ ps-jfrog-platform-release-xray-0                               7/7     Running  
 ps-jfrog-platform-release-xray-pre-upgrade-hook-9xzwk          0/1     Pending     0             10m
 
 ```
-Or you may  observe the xray pod stuck in pending state:
 
+To resolve the xray pod stuck in pending state I had to do the following:
 ```
-kubectl  get pod --namespace $MY_NAMESPACE
-NAME                                                           READY   STATUS             RESTARTS      AGE
-cloudsql-proxy-67cfcf5c75-lm2cq                                1/1     Running            1 (45s ago)   103s
-ps-jfrog-platform-release-artifactory-0                        0/10    PodInitializing    0             100s
-ps-jfrog-platform-release-artifactory-nginx-697c454558-752kd   0/1     CrashLoopBackOff   2 (30s ago)   103s
-ps-jfrog-platform-release-pre-upgrade-check-hfd78              0/1     Completed          0             56s
-ps-jfrog-platform-release-rabbitmq-0                           0/1     Pending            0             102s
-ps-jfrog-platform-release-xray-0                               0/7     PodInitializing    0             100s
-ps-jfrog-platform-release-xray-1                               0/7     PodInitializing    0             11h
-ps-jfrog-platform-release-xray-pre-upgrade-hook-wpk8l          0/1     Pending            0             31s
+kubectl  delete pod ps-jfrog-platform-release-xray-pre-upgrade-hook-9xzwk  ps-jfrog-platform-release-xray-0 --namespace $MY_NAMESPACE
 ```
-To resolve the xray pod stuck in pending state I have to do the following:
+Note: Usually there are no logs for these pods:
 ```
-kubectl  delete pod ps-jfrog-platform-release-xray-pre-upgrade-hook-wpk8l ps-jfrog-platform-release-xray-0 --namespace $MY_NAMESPACE
+kubectl logs -f ps-jfrog-platform-release-pre-upgrade-check-26fdg -n $MY_NAMESPACE
+kubectl logs -f ps-jfrog-platform-release-xray-pre-upgrade-hook-9xzwk -n $MY_NAMESPACE
 ```
-
 
 Note: JAS runs as a k8s job , so you will see the pods from the job only when you "Scan for Contextual Analysis".
 At that time when you run the following , it will show the pods that are running for the job.
@@ -995,7 +1039,7 @@ We will use [11_enable_catalog.yaml](values/For_PROD_Setup/11_enable_catalog.yam
 
 #### c) helm upgrade to install / enable Catalog:
 
-Here is the helm command:
+Here is the helm command for Xray versions below v3.118 (XRAY-109797) :
 
 ```
 helm  upgrade --install $MY_HELM_RELEASE \
@@ -1004,7 +1048,7 @@ helm  upgrade --install $MY_HELM_RELEASE \
 -f 2_artifactory_db_passwords.yaml \
 -f 3_artifactory_admin_user.yaml  \
 -f 6_xray-xsmall-nested.yaml \
--f 6_xray_db_passwords.yaml \
+-f tmp2/6_xray_db_passwords.yaml \
 -f 8_override_xray_system_yaml_in_values.yaml \
 -f 9_enable_JAS.yaml \
 -f 11_enable_catalog.yaml \
@@ -1021,8 +1065,32 @@ helm  upgrade --install $MY_HELM_RELEASE \
 --set catalog.global.joinKeySecretName="joinkey-secret" \
 --version "${JFROG_PLATFORM_CHART_VERSION}" 
 ```
+Here is the helm command for Xray versions >= v3.118 (XRAY-109797 fixed) :
+```
+helm  upgrade --install $MY_HELM_RELEASE \
+-f 0_values-artifactory-xray-platform_prod_$CLOUD_PROVIDER.yaml \
+-f 1_artifactory-small-nested.yaml \
+-f 2_artifactory_db_passwords.yaml \
+-f 3_artifactory_admin_user.yaml  \
+-f 6_xray-xsmall-nested.yaml \
+-f 6_xray_db_passwords.yaml \
+-f 9_enable_JAS.yaml \
+-f 11_enable_catalog.yaml \
+--namespace $MY_NAMESPACE jfrog/jfrog-platform \
+--set gaUpgradeReady=true \
+--set global.versions.artifactory="${RT_VERSION}" \
+--set artifactory.global.masterKeySecretName="rt-masterkey-secret" \
+--set artifactory.global.joinKeySecretName="joinkey-secret" \
+--set global.versions.xray="${XRAY_VERSION}" \
+--set xray.global.masterKeySecretName="xray-masterkey-secret" \
+--set xray.global.joinKeySecretName="joinkey-secret" \
+--set jas.healthcheck.enabled=true \
+--set catalog.global.masterKeySecretName="catalog-masterkey-secret" \
+--set catalog.global.joinKeySecretName="joinkey-secret" \
+--version "${JFROG_PLATFORM_CHART_VERSION}" 
+```
 
-##### Issue5: Another "pre-upgrade hooks failed" when enabling Curation and Package Catalog:
+##### Issue5: Getting "pre-upgrade hooks failed" when enabling Curation and Package Catalog:
 If you see:
 ```
 coalesce.go:298: warning: cannot overwrite table with non table for artifactory.postgresql.metrics.extraEnvVars (map[])
@@ -1033,9 +1101,47 @@ Error: UPGRADE FAILED: pre-upgrade hooks failed: 1 error occurred:
 Run:
 ```
 kubectl get pods --namespace $MY_NAMESPACE
+NAME                                                           READY   STATUS      RESTARTS      AGE
+cloudsql-proxy-67cfcf5c75-6lxv2                                1/1     Running     1 (32m ago)   33m
+ps-jfrog-platform-release-artifactory-0                        10/10   Running     0             33m
+ps-jfrog-platform-release-artifactory-nginx-697c454558-l5cmw   1/1     Running     0             24m
+ps-jfrog-platform-release-pre-upgrade-check-mj92t              0/1     Completed   0             103s
+ps-jfrog-platform-release-rabbitmq-0                           1/1     Running     0             33m
+ps-jfrog-platform-release-xray-0                               7/7     Running     0             6m2s
+ps-jfrog-platform-release-xray-pre-upgrade-hook-v4cw2          0/1     Pending     0             97s
 
-Then run:
-kubectl delete pod ps-jfrog-platform-release-pre-upgrade-check-cs9rq ps-jfrog-platform-release-xray-pre-upgrade-hook-9dvs7 ps-jfrog-platform-release-xray-0 --namespace $MY_NAMESPACE
+Since there there were no logs for "kubectl logs -f ps-jfrog-platform-release-xray-pre-upgrade-hook-v4cw2 -n $MY_NAMESPACE"
+
+kubectl describe pod ps-jfrog-platform-release-xray-pre-upgrade-hook-v4cw2
+shows:
+```
+Events:
+  Type     Reason             Age    From                Message
+  ----     ------             ----   ----                -------
+  Warning  FailedScheduling   3m19s  default-scheduler   0/2 nodes are available: 2 node(s) didn't satisfy existing pods anti-affinity rules. preemption: 0/2 nodes are available: 2 No preemption victims found for incoming pod.
+  Warning  FailedScheduling   3m18s  default-scheduler   0/2 nodes are available: 2 node(s) didn't satisfy existing pods anti-affinity rules. preemption: 0/2 nodes are available: 2 No preemption victims found for incoming pod.
+  Normal   NotTriggerScaleUp  3m19s  cluster-autoscaler  pod didn't trigger scale-up: 1 max node group size reached
+```
+
+You may have to delete either the following pod or all "ps-jfrog-platform-release*" pods :
+```
+kubectl delete pod ps-jfrog-platform-release-pre-upgrade-check-mj92t  ps-jfrog-platform-release-xray-pre-upgrade-hook-v4cw2  ps-jfrog-platform-release-xray-0 --namespace $MY_NAMESPACE
+```
+or
+```
+kubectl get pods --namespace $MY_NAMESPACE --no-headers | grep ^ps-jfrog-platform-release | awk '{print $1}' | xargs kubectl delete pod --namespace $MY_NAMESPACE
+```
+Then you should  see a catalog pod running:
+```
+kubectl  get pod --namespace $MY_NAMESPACE
+
+NAME                                                           READY   STATUS    RESTARTS        AGE
+cloudsql-proxy-67cfcf5c75-cm2wq                                1/1     Running   1 (14m ago)     16m
+ps-jfrog-platform-release-artifactory-0                        10/10   Running   0               16m
+ps-jfrog-platform-release-artifactory-nginx-697c454558-qlnkd   1/1     Running   1 (14m ago)     16m
+ps-jfrog-platform-release-catalog-649b8fd567-hwd9v             2/2     Running   3 (7m59s ago)   14m
+ps-jfrog-platform-release-rabbitmq-0                           1/1     Running   0               16m
+ps-jfrog-platform-release-xray-0                               7/7     Running   0               6m1s
 ```
 
 Check the xray-server-service.log :
@@ -1067,18 +1173,7 @@ kubectl logs -f ps-jfrog-platform-release-artifactory-0 -c access  -n $MY_NAMESP
 kubectl exec -it ps-jfrog-platform-release-xray-0 -c xray-server -- bash
 kubectl exec -it ps-jfrog-platform-release-catalog-869975b4d7-v4d52 -c router -n $MY_NAMESPACE -- cat /opt/jfrog/catalog/var/etc/security/join.key
 ```
-Yopu should see a catalog pod running:
-```
-kubectl  get pod --namespace $MY_NAMESPACE
 
-NAME                                                           READY   STATUS    RESTARTS        AGE
-cloudsql-proxy-67cfcf5c75-cm2wq                                1/1     Running   1 (14m ago)     16m
-ps-jfrog-platform-release-artifactory-0                        10/10   Running   0               16m
-ps-jfrog-platform-release-artifactory-nginx-697c454558-qlnkd   1/1     Running   1 (14m ago)     16m
-ps-jfrog-platform-release-catalog-649b8fd567-hwd9v             2/2     Running   3 (7m59s ago)   14m
-ps-jfrog-platform-release-rabbitmq-0                           1/1     Running   0               16m
-ps-jfrog-platform-release-xray-0                               7/7     Running   0               6m1s
-```
 
 ```
 kubectl exec -it ps-jfrog-platform-release-catalog-869975b4d7-xjgl9 -c catalog  -- cat /opt/jfrog/catalog/var/etc/system.yaml
@@ -1422,6 +1517,23 @@ helm  upgrade --install $MY_HELM_RELEASE \
 --set global.jfrogUrlUI="http://104.196.98.19" \
 --dry-run
 ```
+
+k get deployment
+```
+NAME                                          READY   UP-TO-DATE   AVAILABLE   AGE
+cloudsql-proxy                                1/1     1            1           5d20h
+ps-jfrog-platform-release-artifactory-nginx   1/1     1            1           38h
+ps-jfrog-platform-release-catalog             1/1     1            1           37h
+```
+
+k get sts
+```       
+NAME                                    READY   AGE
+ps-jfrog-platform-release-artifactory   1/1     38h
+ps-jfrog-platform-release-rabbitmq      1/1     37h
+ps-jfrog-platform-release-xray          1/2     37h
+```
+
 -->
 
 ---
