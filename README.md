@@ -686,12 +686,12 @@ coalesce.go:237: warning: skipped value for rabbitmq.initContainers: Not a table
 It is coming from Postgresql and Rabbitmq charts and it does not affect the installation.
 
 ##### Issue2: How to fix the "<$MY_HELM_RELEASE>-pre-upgrade-check pre-upgrade hooks failed" error ? 
-At one time I got this error but did not get this issue in next 2 attempts . SO we can ignore this issue.
-After sometime when the helm command exits it may fail with below error:
+At one time  the helm command exited with below error:
 ```
 Error: UPGRADE FAILED: pre-upgrade hooks failed: 1 error occurred:
         * job ps-jfrog-platform-release-pre-upgrade-check failed: BackoffLimitExceeded
 ```
+But I did not get this issue in next 2 attempts. So we can ignore this issue.
 
 If "<$MY_HELM_RELEASE>-pre-upgrade-check" job has failed with "BackoffLimitExceeded" then delete the job:
 
@@ -709,16 +709,16 @@ Events:
   Normal   SuccessfulCreate      12m    job-controller  Created pod: ps-jfrog-platform-release-pre-upgrade-check-zbngm
   Warning  BackoffLimitExceeded  9m53s  job-controller  Job has reached the specified backoff limit
 ```
-Delete the job and rerun the above "helm  upgrade --install" command and then after a whiel xray should start:
+Delete the job and rerun the above "helm  upgrade --install" command and then after few seconds xray should start:
 ```
 kubectl delete job ps-jfrog-platform-release-pre-upgrade-check -n $MY_NAMESPACE
 ```
 
-You can tail the Artifactory's access log to see that xray connects to Access service:
+To verify this you can  tail the Artifactory's access log to see that Xray connects to Access service:
 ```
 kubectl logs -f ps-jfrog-platform-release-artifactory-0 -c access -n $MY_NAMESPACE
 ```
-You should find the log entries similarto the following:
+You should find the log entries similar to the following:
 ```
 2025-04-21T05:19:42.084Z [jfac ] [INFO ] [5045b8a5b8ff60fd] [.j.a.s.s.r.JoinServiceImpl:109] [27.0.0.1-8040-exec-6] - Router join request: using external topology so skipping router NodeId and IP validation
 2025-04-21T05:19:42.101Z [jfac ] [INFO ] [5045b8a5b8ff60fd] [.r.ServiceTokenProviderImpl:89] [27.0.0.1-8040-exec-6] - Cluster join: Successfully joined jfrou@01jsbckda0wv9paf2k746h0xp9 with node id ps-jfrog-platform-release-xray-0
@@ -935,8 +935,13 @@ It may fail with:
 ```
 Error: UPGRADE FAILED: pre-upgrade hooks failed: 1 error occurred:
         * timed out waiting for the condition
+```
 
+```
 kubectl get pods -n $MY_NAMESPACE
+
+Output:
+
 NAME                                                           READY   STATUS      RESTARTS      AGE
 cloudsql-proxy-67cfcf5c75-4qb7k                                1/1     Running     1 (39m ago)   42m
 ps-jfrog-platform-release-artifactory-0                        10/10   Running     0             28m
@@ -948,15 +953,17 @@ ps-jfrog-platform-release-xray-pre-upgrade-hook-9xzwk          0/1     Pending  
 
 ```
 
-To resolve the xray pod stuck in pending state I had to do the following:
-```
-kubectl  delete pod ps-jfrog-platform-release-xray-pre-upgrade-hook-9xzwk  ps-jfrog-platform-release-xray-0 --namespace $MY_NAMESPACE
-```
 Note: Usually there are no logs for these pods:
 ```
 kubectl logs -f ps-jfrog-platform-release-pre-upgrade-check-26fdg -n $MY_NAMESPACE
 kubectl logs -f ps-jfrog-platform-release-xray-pre-upgrade-hook-9xzwk -n $MY_NAMESPACE
 ```
+At one time  the helm command exited with below error:
+```
+Error: UPGRADE FAILED: pre-upgrade hooks failed: 1 error occurred:
+        * job ps-jfrog-platform-release-pre-upgrade-check failed: BackoffLimitExceeded
+```
+But I did not get this issue in next 2 attempts. So we can ignore this issue.
 
 Note: JAS runs as a k8s job , so you will see the pods from the job only when you "Scan for Contextual Analysis".
 At that time when you run the following , it will show the pods that are running for the job.
@@ -1115,8 +1122,10 @@ ps-jfrog-platform-release-xray-pre-upgrade-hook-v4cw2          0/1     Pending  
 
 Since there there were no logs for "kubectl logs -f ps-jfrog-platform-release-xray-pre-upgrade-hook-v4cw2 -n $MY_NAMESPACE"
 
+```
 kubectl describe pod ps-jfrog-platform-release-xray-pre-upgrade-hook-v4cw2
-shows:
+```
+Output:
 ```
 Events:
   Type     Reason             Age    From                Message
