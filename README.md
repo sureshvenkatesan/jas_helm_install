@@ -631,6 +631,9 @@ python yaml-merger.py tmp/3_mergedfile.yaml 6_xray_db_passwords_pod_size-values-
 
 Here is the helm command for Xray versions below v3.118 (XRAY-109797) :
 
+Note: Have to use "-f 8_override_xray_system_yaml_in_values.yaml"
+
+Note: In [values/For_PROD_Setup/6_xray_db_passwords.yaml](values/For_PROD_Setup/6_xray_db_passwords.yaml) I have set "JF_SHARED_RABBITMQ_VHOST" to "xray_haq" in `xray.common.extraEnvVars` 
 ```
 envsubst < 6_xray_db_passwords.tmpl > tmp2/6_xray_db_passwords.yaml
 
@@ -652,10 +655,10 @@ helm  upgrade --install $MY_HELM_RELEASE \
 --set xray.global.joinKeySecretName="joinkey-secret" \
 --version "${JFROG_PLATFORM_CHART_VERSION}" 
 ```
-Note: Have to use "-f 8_override_xray_system_yaml_in_values.yaml"
+
 
 Here is the helm command for Xray versions >= v3.118 (XRAY-109797 fixed) :
-
+```
 helm  upgrade --install $MY_HELM_RELEASE \
 -f 0_values-artifactory-xray-platform_prod_$CLOUD_PROVIDER.yaml \
 -f 1_artifactory-small-nested.yaml \
@@ -672,8 +675,8 @@ helm  upgrade --install $MY_HELM_RELEASE \
 --set xray.global.masterKeySecretName="xray-masterkey-secret" \
 --set xray.global.joinKeySecretName="joinkey-secret" \
 --version "${JFROG_PLATFORM_CHART_VERSION}" 
+```
 
-Note: In [values/For_PROD_Setup/6_xray_db_passwords.yaml](values/For_PROD_Setup/6_xray_db_passwords.yaml) I have set "JF_SHARED_RABBITMQ_VHOST" to "xray_haq" in `xray.common.extraEnvVars` 
 
 ##### Issue1 : Why does it give these warnings?
 ```
