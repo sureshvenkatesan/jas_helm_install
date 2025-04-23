@@ -1115,8 +1115,8 @@ ps-jfrog-platform-release-pre-upgrade-check-mj92t              0/1     Completed
 ps-jfrog-platform-release-rabbitmq-0                           1/1     Running     0             33m
 ps-jfrog-platform-release-xray-0                               7/7     Running     0             6m2s
 ps-jfrog-platform-release-xray-pre-upgrade-hook-v4cw2          0/1     Pending     0             97s
-
-Since there there were no logs for "kubectl logs -f ps-jfrog-platform-release-xray-pre-upgrade-hook-v4cw2 -n $MY_NAMESPACE"
+```
+There were no logs for "kubectl logs -f ps-jfrog-platform-release-xray-pre-upgrade-hook-v4cw2 -n $MY_NAMESPACE"
 
 ```
 kubectl describe pod ps-jfrog-platform-release-xray-pre-upgrade-hook-v4cw2
