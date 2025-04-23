@@ -931,11 +931,13 @@ helm  upgrade --install $MY_HELM_RELEASE \
 --version "${JFROG_PLATFORM_CHART_VERSION}" 
 ```
 ##### Issue4: Another "pre-upgrade hooks failed" when enabling JAS:
-It may fail with:
+At one time the helm command exited with below error:
 ```
 Error: UPGRADE FAILED: pre-upgrade hooks failed: 1 error occurred:
         * timed out waiting for the condition
 ```
+But I did not get this issue in next 2 attempts. So we can ignore this issue.
+
 
 ```
 kubectl get pods -n $MY_NAMESPACE
@@ -958,12 +960,6 @@ Note: Usually there are no logs for these pods:
 kubectl logs -f ps-jfrog-platform-release-pre-upgrade-check-26fdg -n $MY_NAMESPACE
 kubectl logs -f ps-jfrog-platform-release-xray-pre-upgrade-hook-9xzwk -n $MY_NAMESPACE
 ```
-At one time  the helm command exited with below error:
-```
-Error: UPGRADE FAILED: pre-upgrade hooks failed: 1 error occurred:
-        * job ps-jfrog-platform-release-pre-upgrade-check failed: BackoffLimitExceeded
-```
-But I did not get this issue in next 2 attempts. So we can ignore this issue.
 
 Note: JAS runs as a k8s job , so you will see the pods from the job only when you "Scan for Contextual Analysis".
 At that time when you run the following , it will show the pods that are running for the job.
