@@ -1,24 +1,5 @@
 ## Step-by-Step install of Artifactory, Xray, JAS, Catalog, Curation
 
-<!-- Instead of installing Artifactory, Xray and JAS all in one shot (in AWS EKS or in GKE ), it is recommended to :
-```text
-a) Create  the secrets ( for all user passwords, binarystore configuration , system.yaml etc) 
-b) first install  Artifactory , login to it and set the Artifactory base url
-c) install Xray and verify it successfully connects to the Artifactory instance
-d) Do Xray DB Sync
-e) Enable JAS
-f) Enable Package Catalog + Curation.
-```
-
-The steps to do the above using the [jfrog/platform](https://github.com/jfrog/charts/tree/master/stable/jfrog-platform) chart by using a nested values.yaml from the below child charts is explained in this Readme. 
-- [jfrog/artifactory](https://github.com/jfrog/charts/tree/master/stable/artifactory)
-- [jfrog/xray](https://github.com/jfrog/charts/tree/master/stable/xray) for Jfrog Xray, JAS
-- [catalog](https://github.com/jfrog/charts/tree/master/stable/catalog)
-
-It also shows :
-- how to use the [envsubst](https://www.gnu.org/software/gettext/manual/html_node/envsubst-Invocation.html) command 
-  to get the values to create the  secrets from environmental variables. 
-- the step-by-step approach to improvise the values.yaml to generate the final values.yaml needed for the helm install -->
 
 Rather than installing Artifactory, Xray, and JAS all at once (on AWS EKS, GKE, etc.), it is recommended to follow this sequence:
 
@@ -39,10 +20,6 @@ This README explains how to perform the above steps using the [jfrog/platform](h
 It also covers:
 - How to use the [`envsubst`](https://www.gnu.org/software/gettext/manual/html_node/envsubst-Invocation.html) command to populate secrets from environment variables
 - A step-by-step method to refine the `values.yaml` file and produce the final version required for the Helm installation
-
-
-<!-- Note: I Initially used  [yaml-merger-py](https://github.com/Aref-Riant/yaml-merger-py) , [../../scripts/merge_yaml_with_comments.py](../../scripts/merge_yaml_with_comments.py) but these are not necessary now.
-We still need the [../../scripts/nest_yaml_with_comments.py](../../scripts/nest_yaml_with_comments.py) -->
 
   
 Note: You can parse the https://github.com/jfrog/charts/blob/master/stable/jfrog-platform/values.yaml  with  https://yaml.vercel.app/ 
@@ -175,19 +152,7 @@ Once your cluster is all enabled, you can install the Jfrog platform using value
 
 ### Prerequisites:
 
-<!-- Please download the  python script to merge values.yaml files with best effort to preserve comments, formatting,
-and order of items from https://github.com/Aref-Riant/yaml-merger-py
 
-Requirements:
-```text
-pip install ruamel.yaml
-pip install mergedeep
-```
-
-Usage:
-```
-python yaml-merger.py file1.yaml file2.yaml > mergedfile.yaml
-``` -->
 Install `envsubst` as per https://skofgar.ch/dev/2020/08/how-to-quickly-replace-environment-variables-in-a-file/
 ```
 brew install gettext
@@ -373,12 +338,6 @@ kubectl get secret artifactory-license -o json -n $JFROG_PLATFORM_NAMESPACE | jq
 
 ```
 
-<!-- Note: if you create it as the following then the dataKey will be art.lic ( i.e same as the name of the file)
-```text
-kubectl create secret generic artifactory-license \  
---from-file=/Users/sureshv/Documents/Test_Scripts/helm_upgrade/licenses/art.lic -n $JFROG_PLATFORM_NAMESPACE 
-``` 
--->
 
 
 ---
@@ -388,35 +347,7 @@ kubectl create secret generic artifactory-license \
 **Note:** As of February 14, 2025, the settings from [`artifactory-small.yaml`](https://github.com/jfrog/charts/blob/master/stable/artifactory/sizing/artifactory-small.yaml) are already incorporated into [`platform-small.yaml`](https://github.com/jfrog/charts/blob/master/stable/jfrog-platform/sizing/platform-small.yaml).
 
 
-<!-- 
-#### a) Custom Configuration
-Start with the 1_artifactory-small.yaml for **TEST** environment or 1_artifactory-large.yaml for **PROD** 
-environment
 
-- Created `1_artifactory-small.yaml` by copying the original [artifactory-small.yaml](https://github.com/jfrog/charts/blob/master/stable/artifactory/sizing/artifactory-small.yaml)
-- Added the following JVM parameter to support graceful shutdown behavior:
-
-  ```yaml
-  -Dartifactory.graceful.shutdown.max.request.duration.millis=30000
-  ```
-This allows Artifactory to wait up to 30 seconds to complete in-flight requests during shutdown.
-
-Note: `/values/For_PROD_Setup/tmp/` already in .gitignore
-
-```text
-python ../../scripts/nest_yaml_with_comments.py 1_artifactory-small.yaml \
- artifactory -o 1_artifactory-small-nested.yaml 
-
-python ../../scripts/merge_yaml_with_comments.py 0_values-artifactory-xray-platform_prod_$CLOUD_PROVIDER.yaml 1_artifactory-small-nested.yaml -o tmp2/1_mergedfile.yml
-
-```
-
-```
-python yaml-merger.py 0_values-artifactory-xray-platform_prod_$CLOUD_PROVIDER.yaml 1_artifactory-small.yaml > tmp/1_mergedfile.yaml
-or
-python yaml-merger.py 0_values-artifactory-xray-platform_prod_$CLOUD_PROVIDER.yaml 1_artifactory-large.yaml > tmp/1_mergedfile.yaml 
-```
---> 
 
 ---
 #### a) Artifactory Database Credentials:
@@ -432,16 +363,6 @@ kubectl create secret generic artifactory-database-creds \
 --from-literal=db-url=jdbc:postgresql://$DB_SERVER:5432/$ARTIFACTORY_DB -n $JFROG_PLATFORM_NAMESPACE
 ```
 
-<!-- ```
-python ../../scripts/merge_yaml_with_comments.py tmp2/1_mergedfile.yml 2_artifactory_db_passwords.yaml -o tmp2/2_mergedfile.yaml
-
-``` -->
-<!-- 
-
-```
-python yaml-merger.py tmp/1_mergedfile.yaml 2_artifactory_db_passwords.yaml > tmp/2_mergedfile.yaml 
-```
--->
 
 ---
 
@@ -456,11 +377,6 @@ kubectl delete secret  art-creds  -n $JFROG_PLATFORM_NAMESPACE
 kubectl create secret generic art-creds --from-literal=bootstrap.creds='admin@*=Test@123' -n $JFROG_PLATFORM_NAMESPACE
 ```
 
-<!-- ```
-python ../../scripts/merge_yaml_with_comments.py tmp2/2_mergedfile.yaml 3_artifactory_admin_user.yaml -o tmp2/3_mergedfile.yaml
-
-``` -->
-<!-- python yaml-merger.py tmp/2_mergedfile.yaml 3_artifactory_admin_user.yaml > tmp/3_mergedfile.yaml -->
 
 ---
 
@@ -497,19 +413,6 @@ Additionally, these tunings are reflected in the default values from:
 - [`jfrog-platform/values.yaml`](https://github.com/jfrog/charts/blob/master/stable/jfrog-platform/values.yaml)
 - [`artifactory/values.yaml`](https://github.com/jfrog/charts/blob/master/stable/artifactory/values.yaml)
 
-<!-- 5.  Override the system.yaml using either 5_artifactory_system_small.yaml for TEST environment or 
-    5_artifactory_system_large.yaml for PROD as per KB [How do I tune Artifactory for heavy loads?](https://jfrog.com/help/r/how-do-i-tune-artifactory-for-heavy-loads/how-do-i-tune-artifactory-for-heavy-loads)
-
-
- 
-```
-kubectl delete secret artifactory-custom-systemyaml -n $JFROG_PLATFORM_NAMESPACE
-kubectl create secret generic artifactory-custom-systemyaml --from-file=system.yaml=./5_artifactory_system_small.yaml \
--n $JFROG_PLATFORM_NAMESPACE
-or
-kubectl create secret generic artifactory-custom-systemyaml --from-file=system.yaml=./5_artifactory_system_large.yaml \
--n $JFROG_PLATFORM_NAMESPACE
-``` -->
 
 #### e) Deploy Artifactory
 Verify the enabled services using:
@@ -645,16 +548,7 @@ otherwise use:
 ```
 bash decode_secret.sh <secret-to-decrypt>  <namespace>
 ```
-<!-- #### b) Secret to override the xray system yaml
-**Note:** Secret to override the xray system.yaml is needed for Xray versions below v3.118 (XRAY-109797)  to set the
-share.rabbitMq.password via the `xray-custom-systemyaml`. For Xray versions >=v3.118 you an skip this step.
-```
-envsubst < 8_xray_system_yaml.tmpl > tmp2/8_xray_system_yaml.yaml
 
-kubectl delete  secret xray-custom-systemyaml -n $JFROG_PLATFORM_NAMESPACE
-kubectl create secret generic xray-custom-systemyaml --from-file=system.yaml=tmp2/8_xray_system_yaml.yaml \
--n $JFROG_PLATFORM_NAMESPACE
-``` -->
  
 #### b) Secret for Rabbitmq admin password:
 
@@ -667,8 +561,6 @@ Also configure the RabbitMQ password using a secret (with the key `rabbitmq-pass
 kubectl create secret generic rabbitmq-admin-creds \
 --from-literal=rabbitmq-password=$MY_RABBITMQ_ADMIN_USER_PASSWORD -n $JFROG_PLATFORM_NAMESPACE 
 ```
-<!-- --from-literal=url=amqp://$JFROG_PLATFORM_NAME-rabbitmq:5672  -->
-
 
 
 #### c) Nest the xray sizing yaml file from Xray chart:
@@ -683,14 +575,7 @@ python ../../scripts/nest_yaml_with_comments.py 6_xray-xsmall.yaml \
  xray -o 6_xray-xsmall-nested.yaml 
 ```
 
-<!-- ```
-python yaml-merger.py tmp/3_mergedfile.yaml 6_xray_db_passwords_pod_size-values-small.yaml > tmp/6_mergedfile.yaml
-or
-python yaml-merger.py tmp/3_mergedfile.yaml 6_xray_db_passwords_pod_size-values-large.yaml > tmp/6_mergedfile.yaml
-``` -->
 #### d) Deploy Xray 
-<!-- Override with the 6_xray_db_passwords_pod_size-values-small.yaml for TEST environment or 
-   6_xray_db_passwords_pod_size-values-large.yaml for PROD -->
 
 Note: In [values/For_PROD_Setup/6_xray_db_passwords.yaml](values/For_PROD_Setup/6_xray_db_passwords.yaml) I have set "JF_SHARED_RABBITMQ_VHOST" to "xray" in `xray.common.extraEnvVars` 
 
@@ -713,91 +598,6 @@ helm  upgrade --install $JFROG_PLATFORM_NAME \
 --set xray.global.joinKeySecretName="joinkey-secret" \
 --version "${JFROG_PLATFORM_CHART_VERSION}" 
 ```
-
-<!-- Here is the helm command for Xray versions below v3.118 (XRAY-109797) :
-
-Note: Have to use "-f 8_override_xray_system_yaml_in_values.yaml"
-
-
-```
-envsubst < 6_xray_db_passwords.tmpl > tmp2/6_xray_db_passwords.yaml
-
-helm  upgrade --install $JFROG_PLATFORM_NAME \
--f 0_values-artifactory-xray-platform_prod_$CLOUD_PROVIDER.yaml \
--f platform-small.yaml \
--f 2_artifactory_db_passwords.yaml \
--f 3_artifactory_admin_user.yaml  \
--f 6_xray-xsmall-nested.yaml \
--f tmp2/6_xray_db_passwords.yaml \
--f 8_override_xray_system_yaml_in_values.yaml \
---namespace $JFROG_PLATFORM_NAMESPACE jfrog/jfrog-platform  \
---set gaUpgradeReady=true \
---set global.versions.artifactory="${RT_VERSION}" \
---set artifactory.global.masterKeySecretName="rt-masterkey-secret" \
---set artifactory.global.joinKeySecretName="joinkey-secret" \
---set global.versions.xray="${XRAY_VERSION}" \
---set xray.global.masterKeySecretName="xray-masterkey-secret" \
---set xray.global.joinKeySecretName="joinkey-secret" \
---version "${JFROG_PLATFORM_CHART_VERSION}" 
-```
-
-
-Here is the helm command for Xray versions >= v3.118 (XRAY-109797 fixed) :
-```
-helm  upgrade --install $JFROG_PLATFORM_NAME \
--f 0_values-artifactory-xray-platform_prod_$CLOUD_PROVIDER.yaml \
--f 1_artifactory-small-nested.yaml \
--f 2_artifactory_db_passwords.yaml \
--f 3_artifactory_admin_user.yaml  \
--f 6_xray-xsmall-nested.yaml \
--f 6_xray_db_passwords.yaml \
---namespace $JFROG_PLATFORM_NAMESPACE jfrog/jfrog-platform  \
---set gaUpgradeReady=true \
---set global.versions.artifactory="${RT_VERSION}" \
---set artifactory.global.masterKeySecretName="rt-masterkey-secret" \
---set artifactory.global.joinKeySecretName="joinkey-secret" \
---set global.versions.xray="${XRAY_VERSION}" \
---set xray.global.masterKeySecretName="xray-masterkey-secret" \
---set xray.global.joinKeySecretName="joinkey-secret" \
---version "${JFROG_PLATFORM_CHART_VERSION}" 
-```
-
-
-##### Issue1 : Why does it give these warnings?
-```
-coalesce.go:298: warning: cannot overwrite table with non table for artifactory.postgresql.metrics.extraEnvVars (map[])
-coalesce.go:237: warning: skipped value for rabbitmq.initContainers: Not a table.
-```
-It is coming from Postgresql and Rabbitmq charts and it does not affect the installation.
-
-##### Issue2: How to fix the "<$JFROG_PLATFORM_NAME>-pre-upgrade-check pre-upgrade hooks failed" error ? 
-At one time  the helm command exited with below error:
-```
-Error: UPGRADE FAILED: pre-upgrade hooks failed: 1 error occurred:
-        * job ps-jfrog-platform-release-pre-upgrade-check failed: BackoffLimitExceeded
-```
-But I did not get this issue in next 2 attempts. So we can ignore this issue.
-
-If "<$JFROG_PLATFORM_NAME>-pre-upgrade-check" job has failed with "BackoffLimitExceeded" then delete the job:
-
-```
-kubectl get job -n $JFROG_PLATFORM_NAMESPACE
-NAME                                          STATUS   COMPLETIONS   DURATION   AGE
-ps-jfrog-platform-release-pre-upgrade-check   Failed   0/1           8m33s      8m33s
-```
-
-```
-kubectl describe job ps-jfrog-platform-release-pre-upgrade-check -n $JFROG_PLATFORM_NAMESPACE
-Events:
-  Type     Reason                Age    From            Message
-  ----     ------                ----   ----            -------
-  Normal   SuccessfulCreate      12m    job-controller  Created pod: ps-jfrog-platform-release-pre-upgrade-check-zbngm
-  Warning  BackoffLimitExceeded  9m53s  job-controller  Job has reached the specified backoff limit
-```
-Delete the job and rerun the above "helm  upgrade --install" command and then after few seconds xray should start:
-```
-kubectl delete job ps-jfrog-platform-release-pre-upgrade-check -n $JFROG_PLATFORM_NAMESPACE
-``` -->
 
 You can  tail the Artifactory's access log to see that Xray connects to Access service:
 ```
@@ -875,91 +675,8 @@ cat /opt/jfrog/xray/var/log/xray-server-service.log
 tail -F /opt/jfrog/xray/var/log/xray-server-service.log
 ```
 
-<!-- 
-If in  the xray pod xray-service.log you see:
-```
-JF_SHARED_DATABASE_URL              : postgres://cloudsql-proxy:5432/xray?sslmode=disable
-JF_SHARED_RABBITMQ_VHOST            : xray
-JF_SHARED_NODE_ID                   : ps-jfrog-platform-release-xray-0
-JF_SHARED_NODE_IP                   : 10.1.2.22
-JF_SHARED_DATABASE_USERNAME         : xray
-JF_PRODUCT_DATA_INTERNAL            : /var/opt/jfrog/xray
-JF_SYSTEM_YAML                      : /opt/jfrog/xray/var/etc/system.yaml
-JF_PRODUCT_HOME                     : /opt/jfrog/xray
-JF_SHARED_NODE_NAME                 : ps-jfrog-platform-release-xray-0
-...
-
-2025-04-18T02:21:29.895Z [jfxr ] [INFO ] [dee752f0da95b279] [mq_connector:336              ] [MainServer                      ] Connecting to RabbitMQ: amqp://ps-jfrog-platform-release-rabbitmq:5672/xray, retry=34
-2025-04-18T02:21:29.900Z [jfxr ] [ERROR] [dee752f0da95b279] [mq_connector:345              ] [MainServer                      ] 
-
-  _____       _     _     _ _   __  __  ____    _                   _                      _ _       _     _
- |  __ \     | |   | |   (_) | |  \/  |/ __ \  (_)                 | |                    (_) |     | |   | |
- | |__) |__ _| |__ | |__  _| |_| \  / | |  | |  _ ___   _ __   ___ | |_    __ ___   ____ _ _| | __ _| |__ | | ___
- |  _  // _  |  _ \|  _ \| | __| |\/| | |  | | | / __| |  _ \ / _ \| __|  / _  \ \ / / _  | | |/ _  |  _ \| |/ _ \
- | | \ \ (_| | |_) | |_) | | |_| |  | | |__| | | \__ \ | | | | (_) | |_  | (_| |\ V / (_| | | | (_| | |_) | |  __/
- |_|  \_\__ _|_ __/|_ __/|_|\__|_|  |_|\___\_\ |_|___/ |_| |_|\___/ \__|  \__ _| \_/ \__ _|_|_|\__ _|_ __/|_|\___|
-
-
-2025-04-18T02:21:29.900Z [jfxr ] [ERROR] [dee752f0da95b279] [mq_connector:346              ] [MainServer                      ] Error connecting to rabbit message queue check mq settings. Error: Exception (403) Reason: "no access to this vhost"
-```
-
-In the rabbimq pod (ps-jfrog-platform-release-rabbitmq-0) you see:
-```
-2025-04-18 02:18:27.968508+00:00 [error] <0.931.0> Error on AMQP connection <0.931.0> (10.1.0.23:58562 -> 10.1.1.10:5672, user: 'admin', state: opening):
-2025-04-18 02:18:27.968508+00:00 [error] <0.931.0> vhost xray not found
-2025-04-18 02:18:27.969187+00:00 [info] <0.931.0> closing AMQP connection <0.931.0> (10.1.0.23:58562 -> 10.1.1.10:5672, vhost: 'none', user: 'admin')
-```
-
-
-
-As per [slack](https://jfrog.slack.com/archives/CD30SKMDG/p1704871916697029?thread_ts=1704783216.516669&cid=CD30SKMDG) and  XRAY-88371:
-```
-RabbitMQ Xray vhost:
-Default "classic": '/'
-Platform "classic": 'xray'
-New HA QuorumQueues: 'xray_haq'
-```
-So how to specify that the vhost is either '/' or 'xray_haq' as only these 2 are available in the  `load_definition.json` as per below command ? :
-```
-kubectl get secret $JFROG_PLATFORM_NAME-load-definition -n $JFROG_PLATFORM_NAMESPACE -o json | jq -r '.data["load_definition.json"]' | base64 -d
-
-```
-The output is in [values/For_PROD_Setup/10_optional_load_definition.json](values/For_PROD_Setup/10_optional_load_definition.json) and it uses the password from `rabbitmq-admin-creds` specified in [values/For_PROD_Setup/6_xray_db_passwords.yaml](values/For_PROD_Setup/6_xray_db_passwords.yaml)
-
-##### Issue3: What is the correct way to deploy xray so that the JF_SHARED_RABBITMQ_VHOST is either '/' or 'xray_haq' to match the `load_definition.json`  ?
-
-**Resolution:**
-That is why in [values/For_PROD_Setup/6_xray_db_passwords.yaml](values/For_PROD_Setup/6_xray_db_passwords.yaml) I have set "JF_SHARED_RABBITMQ_VHOST" to `"xray_haq"` in `xray.common.extraEnvVars` to resolve avoid using the Platform's `"classic"`` `'xray'` **vhost** in rabbitMQ.
-
-See the new [values/For_PROD_Setup/10_optional_load_definition.json](values/For_PROD_Setup/10_optional_load_definition.json) that is used as of Apr 20, 2025. -->
-
 ---
-<!-- #### Vhost Troubleshooting:
-If you still want the vhost `xray` as was used in `Platform "classic"`  you can do the following,
-but it is nit required:
 
-1. **Check Existing Vhosts**:
-   ```sh
-   kubectl exec -it ps-jfrog-platform-release-rabbitmq-0 -- rabbitmqctl list_vhosts --namespace $JFROG_PLATFORM_NAMESPACE
-   ```
-
-2. **Create Virtual Host**:
-   ```sh
-   kubectl exec -it ps-jfrog-platform-release-rabbitmq-0 -- rabbitmqctl add_vhost xray --namespace $JFROG_PLATFORM_NAMESPACE
-   ```
-
-3. **Set Permissions**:
-   ```sh
-   kubectl exec -it ps-jfrog-platform-release-rabbitmq-0 -- rabbitmqctl set_permissions -p xray admin ".*" ".*" ".*" --namespace $JFROG_PLATFORM_NAMESPACE
-   ```
-
-4. **Restart the pod ps-jfrog-platform-release-xray-0**:
- ```sh
- kubectl delete pod ps-jfrog-platform-release-xray-0 --namespace $JFROG_PLATFORM_NAMESPACE
- ```
-
---- 
--->
 ### 7. Perform Xray DBSync
 If xray is up and is now integrated with Artifactory , you can perform the Xray DBSync.
 
@@ -990,36 +707,6 @@ helm  upgrade --install $JFROG_PLATFORM_NAME \
 --version "${JFROG_PLATFORM_CHART_VERSION}" 
 ```
 
-<!-- ##### Issue4: Another "pre-upgrade hooks failed" when enabling JAS:
-At one time the helm command exited with below error:
-```
-Error: UPGRADE FAILED: pre-upgrade hooks failed: 1 error occurred:
-        * timed out waiting for the condition
-```
-But I did not get this issue in next 2 attempts. So we can ignore this issue.
-
-
-```
-kubectl get pods -n $JFROG_PLATFORM_NAMESPACE
-
-Output:
-
-NAME                                                           READY   STATUS      RESTARTS      AGE
-cloudsql-proxy-67cfcf5c75-4qb7k                                1/1     Running     1 (39m ago)   42m
-ps-jfrog-platform-release-artifactory-0                        10/10   Running     0             28m
-ps-jfrog-platform-release-artifactory-nginx-697c454558-8wf2p   1/1     Running     0             28m
-ps-jfrog-platform-release-pre-upgrade-check-26fdg              0/1     Completed   0             10m
-ps-jfrog-platform-release-rabbitmq-0                           1/1     Running     0             17m
-ps-jfrog-platform-release-xray-0                               7/7     Running     2 (16m ago)   17m
-ps-jfrog-platform-release-xray-pre-upgrade-hook-9xzwk          0/1     Pending     0             10m
-
-```
-
-Note: Usually there are no logs for these pods:
-```
-kubectl logs -f ps-jfrog-platform-release-pre-upgrade-check-26fdg -n $JFROG_PLATFORM_NAMESPACE
-kubectl logs -f ps-jfrog-platform-release-xray-pre-upgrade-hook-9xzwk -n $JFROG_PLATFORM_NAMESPACE
-``` -->
 
 **Note:**  
 As explained in [JFrog Advanced Security Readiness Checking](https://jfrog.com/help/r/jfrog-installation-setup-documentation/jfrog-advanced-security-readiness-checking), since we are enabling the **Health Check Cron Job** through the following configuration in [`values/For_PROD_Setup/9_enable_JAS.yaml`](values/For_PROD_Setup/9_enable_JAS.yaml):
@@ -1102,7 +789,7 @@ Output:
 
 ### 9. Deploying JFrog Catalog
 Ref: [Install JFrog Catalog with Helm](https://jfrog.com/help/r/jfrog-installation-setup-documentation/install-jfrog-catalog-with-helm-and-openshift)
-<!-- [Installing Catalog Service on a Dedicated Kubernetes Cluster Using Helm Installers](https://jfrog-int.atlassian.net/wiki/spaces/XRAYRnD/pages/885325832/Installing+Catalog+Service+on+a+Dedicated+Kubernetes+Cluster+Using+Helm+Installers) -->
+
 
 #### a) Catalog Database secret
 
@@ -1143,50 +830,6 @@ helm  upgrade --install $JFROG_PLATFORM_NAME \
 --version "${JFROG_PLATFORM_CHART_VERSION}" 
 ```
 
-
-<!-- ##### Issue5: Getting "pre-upgrade hooks failed" when enabling Curation and Package Catalog:
-If you see:
-```
-coalesce.go:298: warning: cannot overwrite table with non table for artifactory.postgresql.metrics.extraEnvVars (map[])
-coalesce.go:237: warning: skipped value for rabbitmq.initContainers: Not a table.
-Error: UPGRADE FAILED: pre-upgrade hooks failed: 1 error occurred:
-    * timed out waiting for the condition
-```
-Run:
-```
-kubectl get pods --namespace $JFROG_PLATFORM_NAMESPACE
-NAME                                                           READY   STATUS      RESTARTS      AGE
-cloudsql-proxy-67cfcf5c75-6lxv2                                1/1     Running     1 (32m ago)   33m
-ps-jfrog-platform-release-artifactory-0                        10/10   Running     0             33m
-ps-jfrog-platform-release-artifactory-nginx-697c454558-l5cmw   1/1     Running     0             24m
-ps-jfrog-platform-release-pre-upgrade-check-mj92t              0/1     Completed   0             103s
-ps-jfrog-platform-release-rabbitmq-0                           1/1     Running     0             33m
-ps-jfrog-platform-release-xray-0                               7/7     Running     0             6m2s
-ps-jfrog-platform-release-xray-pre-upgrade-hook-v4cw2          0/1     Pending     0             97s
-```
-There were no logs for "kubectl logs -f ps-jfrog-platform-release-xray-pre-upgrade-hook-v4cw2 -n $JFROG_PLATFORM_NAMESPACE"
-
-```
-kubectl describe pod ps-jfrog-platform-release-xray-pre-upgrade-hook-v4cw2
-```
-Output:
-```
-Events:
-  Type     Reason             Age    From                Message
-  ----     ------             ----   ----                -------
-  Warning  FailedScheduling   3m19s  default-scheduler   0/2 nodes are available: 2 node(s) didn't satisfy existing pods anti-affinity rules. preemption: 0/2 nodes are available: 2 No preemption victims found for incoming pod.
-  Warning  FailedScheduling   3m18s  default-scheduler   0/2 nodes are available: 2 node(s) didn't satisfy existing pods anti-affinity rules. preemption: 0/2 nodes are available: 2 No preemption victims found for incoming pod.
-  Normal   NotTriggerScaleUp  3m19s  cluster-autoscaler  pod didn't trigger scale-up: 1 max node group size reached
-```
-
-You may have to delete either the following pod or all "ps-jfrog-platform-release*" pods :
-```
-kubectl delete pod ps-jfrog-platform-release-pre-upgrade-check-mj92t  ps-jfrog-platform-release-xray-pre-upgrade-hook-v4cw2  ps-jfrog-platform-release-xray-0 --namespace $JFROG_PLATFORM_NAMESPACE
-```
-or
-```
-kubectl get pods --namespace $JFROG_PLATFORM_NAMESPACE --no-headers | grep ^ps-jfrog-platform-release | awk '{print $1}' | xargs kubectl delete pod --namespace $JFROG_PLATFORM_NAMESPACE
-``` -->
 
 Then you should  see a catalog pod running:
 ```
@@ -1309,293 +952,6 @@ Output:
 
 ---
 
-
-<!-- 
-#### Rabbitmq configuration:
-
-Search "memoryHighWatermark" and found new setting "vm_memory_high_watermark_absolute" that is not in
-https://github.com/jfrog/charts/blob/master/stable/xray/values-large.yaml
-REf: "vm_memory_high_watermark_absolute" is  a construct from 
-https://jfrog.slack.com/archives/CD30SKMDG/p1678277533753349 that was picked from the rabbitmq bitnami chart 
-https://github.com/bitnami/charts/blob/main/bitnami/rabbitmq/values.yaml#L476
-
-Ref to maxAvailableSchedulers and onlineSchedulers is in 
-https://github.com/bitnami/charts/blob/5492c138a533177ebf1dc660ad19eb18b96f39ba/bitnami/rabbitmq/values.yaml#L210
-
-
-Rabbitmq is anyway external but maintained by JFrog Platform chart :
-
-From [#249001](https://groups.google.com/a/jfrog.com/g/support-followup/c/STPhVtUGzW4/m/nzIPInHOAAAJ)
-
-You can pass the rabbitmq username , password , url as a secret by creating a secret as below:
-```
-kubectl delete secret xray-rabbitmq-creds -n $JFROG_PLATFORM_NAMESPACE
-
-kubectl create secret generic xray-rabbitmq-creds --from-literal=username=admin \
---from-literal=password=$MY_RABBITMQ_ADMIN_USER_PASSWORD \
---from-literal=url=amqp://$JFROG_PLATFORM_NAME-rabbitmq:5672 -n $JFROG_PLATFORM_NAMESPACE
-
-kubectl get secret xray-rabbitmq-creds  -n $JFROG_PLATFORM_NAMESPACE -o json | jq '.data | map_values(@base64d)'
-
-```
-First get the default load_definition.json  ( from your earlier deploys before you make the load_definition as secret):
-```
-kubectl get secret <secret-name> -n <namespace> -o json | jq -r '.data["key"]' | base64 -d
-kubectl get secret $JFROG_PLATFORM_NAME-load-definition -n $JFROG_PLATFORM_NAMESPACE -o json | jq -r '.data["load_definition.json"]' | base64 -d
-
-```
-and then make load_definition also as a secret after changing the admin password in it:
-```
-kubectl delete secret $JFROG_PLATFORM_NAME-load-definition -n $JFROG_PLATFORM_NAMESPACE
-
-kubectl create secret generic $JFROG_PLATFORM_NAME-load-definition \
---from-file=load_definition.json=./10_optional_load_definition.json -n $JFROG_PLATFORM_NAMESPACE
-
-kubectl get secret $JFROG_PLATFORM_NAME-load-definition -n $JFROG_PLATFORM_NAMESPACE -o json | jq '.data | map_values(@base64d)'
-```
-
-**Note:** If you already deployed rabbitmq from a previous Xray install you can get the  pod yaml definition using:
-```text
-kubectl get pod $JFROG_PLATFORM_NAME-rabbitmq-0 -n $JFROG_PLATFORM_NAMESPACE -o yaml > ps-jfrog-platform-release-rabbitmq-0.yaml
-```
-
-We  want to override the rabbitmq admin user to admin ( instead of guest as the username) and
-password (default is password) :
-https://github.com/jfrog/charts/blob/b8a04c8f57f7b87d1895cd455fa4859de5db9db2/stable/xray/values.yaml#L484:
-
-Ref: 256917 .
-```text
-rabbitmq:
-  auth:
-    username: guest
-    password: password
-```
-
-The rabbitMQ admin credentials can be set using the **existingPasswordSecret** in the helm values.yaml as
-mentioned in the comment in snippet below :
-SOme discussion on this in https://jfrog.slack.com/archives/CD30SKMDG/p1686040418572439?thread_ts=1683027138.354849&cid=CD30SKMDG
-~~~
-rabbitmq:
-  enabled: true
-  ## Enable the flag if the feature flags in rabbitmq is enabled manually
-  rabbitmqUpgradeReady: false
-  replicaCount: 1
-  rbac:
-    create: true
-  image:
-    registry: releases-docker.jfrog.io
-    repository: bitnami/rabbitmq
-    tag: 3.11.10-debian-11-r5
-  auth:
-    username: guest
-    password: password
-    ## Alternatively, you can use a pre-existing secret with a key called rabbitmq-password by specifying existingPasswordSecret
-    # existingPasswordSecret: <name-of-existing-secret>
-~~~~
-To do this :
-
-a) **Create the rabbitmq-admin-creds:**
-```text
-kubectl delete secret rabbitmq-admin-creds -n $JFROG_PLATFORM_NAMESPACE 
-
-kubectl create secret generic rabbitmq-admin-creds \
---from-literal=rabbitmq-password=$MY_RABBITMQ_ADMIN_USER_PASSWORD -n $JFROG_PLATFORM_NAMESPACE 
-
-kubectl get secret rabbitmq-admin-creds -n $JFROG_PLATFORM_NAMESPACE -o json | jq '.data | map_values(@base64d)'
-kubectl get secret  jfrog-platform-rabbitmq -n devops-acc-us-env -o json | jq '.data | map_values(@base64d)'
-```
-
-b) Override with the 7_rabbitmq_enabled_external_values-small.yaml ( for TEST) or 
-7_rabbitmq_enabled_external_values-large.yaml ( for PROD) to use the rabbitmq-admin-creds to set the rabbitmq admin 
-password.
-
-**Note:** Even in PROD currently you need to use replicaCount = 1 for the rabbitmq pod because
-Rabbitmq in HA mode is not fully supported by Xray product and we have  open JIRA
-[XRAY-16820](https://jfrog-int.atlassian.net/browse/XRAY-16820) . 
-See https://jfrog.slack.com/archives/CD30SKMDG/p1688621345420649?thread_ts=1688614562.639429&cid=CD30SKMDG
-```
-python yaml-merger.py tmp/6_mergedfile.yaml 7_rabbitmq_enabled_external_values-small.yaml > tmp/7_mergedfile.yaml
-or
-python yaml-merger.py tmp/6_mergedfile.yaml 7_rabbitmq_enabled_external_values-large.yaml > tmp/7_mergedfile.yaml
-```
----
-
-**Now start deploying the helm release to install the JFrog Products starting with Artifactory:**
-
-First do a  Dry run:
-```text
-helm  upgrade --install $JFROG_PLATFORM_NAME \
--f tmp2/3_mergedfile.yaml \
---namespace $JFROG_PLATFORM_NAMESPACE jfrog/jfrog-platform  \
---set gaUpgradeReady=true \
---dry-run
-```
-or
-
-or
-
-```text
-helm  upgrade --install $JFROG_PLATFORM_NAME \
--f 0_values-artifactory-xray-platform_prod_$CLOUD_PROVIDER.yaml \
--f 1_artifactory-small-nested.yaml \
--f 2_artifactory_db_passwords.yaml \
--f 3_artifactory_admin_user.yaml  \
---namespace $JFROG_PLATFORM_NAMESPACE jfrog/jfrog-platform  \
---set gaUpgradeReady=true \
---set global.versions.artifactory="${RT_VERSION}" \
---version 11.0.6 \
---dry-run
-```
-
----
-
-Then apply without --dry-run :
-
-Make sure you created all the k8s secrets mentioned above . Then make the necessary changes in 3_mergedfile.yaml and 
-you can Install  Artifactory HA  with say replicaCount=2 .
-```text
-helm  upgrade --install $JFROG_PLATFORM_NAME \
--f tmp/3_mergedfile.yaml \
---namespace $JFROG_PLATFORM_NAMESPACE jfrog/jfrog-platform  \
---set gaUpgradeReady=true \
---set global.versions.artifactory="${RT_VERSION}"
---version 107.104.15
-```
-or
-
-```text
-helm  upgrade --install $JFROG_PLATFORM_NAME \
--f 0_values-artifactory-xray-platform_prod_$CLOUD_PROVIDER.yaml \
--f 1_artifactory-small-nested.yaml \
--f 2_artifactory_db_passwords.yaml \
--f 3_artifactory_admin_user.yaml  \
---namespace $JFROG_PLATFORM_NAMESPACE jfrog/jfrog-platform  \
---set gaUpgradeReady=true \
---set global.versions.artifactory="${RT_VERSION}" \
---set artifactory.masterKeySecretName="joinkey-secret" \
---set artifactory.joinKeySecretName="masterkey-secret" \
---version 11.0.6 
-```
-
----
-
-Check Artifactory logs to verify that it can connect to the filestore and database and can start successfully :
-```text
-kubectl exec -it $JFROG_PLATFORM_NAME-artifactory-0 -n $JFROG_PLATFORM_NAMESPACE -c artifactory -- bash
-cd /opt/jfrog/artifactory/var/log
-tail -F /opt/jfrog/artifactory/var/log/artifactory-service.log
-
-or
-
-kubectl exec -it $JFROG_PLATFORM_NAME-artifactory-0 -n $JFROG_PLATFORM_NAMESPACE -c artifactory -- tail -F /opt/jfrog/artifactory/var/log/artifactory-service.log
-```
----
-
-Get the nginx external IP/url using:
-```
-kubectl get svc $JFROG_PLATFORM_NAME-artifactory-nginx -n $JFROG_PLATFORM_NAMESPACE
-```
-For me it was 104.196.98.19 .
-
----
-
-Next install xray . 
-
-If you have ALB use that instead of nginx in "--set global.jfrogUrlUI" in below command
-```text
-helm  upgrade --install $JFROG_PLATFORM_NAME \
--f tmp/7_mergedfile.yaml \
---namespace $JFROG_PLATFORM_NAMESPACE jfrog/jfrog-platform  \
---set gaUpgradeReady=true \
---set global.jfrogUrlUI="http://104.196.98.19" 
-```
-
----
-
-If Xray is not connecting to Rabbitmq and you see   following errors in the xray logs:
-```
-2023-07-23 18:58:25.284035+00:00 [error] <0.28993.9> PLAIN login refused: user 'admin' - invalid credentials
-```
-It means setting the "xray-rabbitmq-creds" in Values.rabbitmq.external.secrets is not overriding the Rabbitmq admin 
-password in the xray system.yaml though Rabbitmq is started successfully with the correct  admin credentials from secret rabbitmq-admin-creds
-as shown above. 
-
-Overriding the "-set rabbitmq.external.password" may not work because I am already using rabbitmq.external.secrets 
-in the values.yaml ( for the rabbitmq and xray)
-In  https://github.com/jfrog/charts/blob/4ba461c93ece4b736db84954982cf4e7ec54f8eb/stable/xray/values.yaml#L189-L193 we can use the "password: "{{ .Values.rabbitmq.external.password }}""  i.e from "-set rabbitmq.external.password" only if Values.rabbitmq.external.secrets is not used.
-```
-      {{- if not .Values.rabbitmq.external.secrets }}
-        url: "{{ tpl .Values.rabbitmq.external.url . }}"
-        username: "{{ .Values.rabbitmq.external.username }}"
-        password: "{{ .Values.rabbitmq.external.password }}"
-      {{- end }}
-```
-I posted this to  https://jfrog.slack.com/archives/CD30SKMDG/p1690306078218199 and logged INST-6705
-
-To **workaround** this I exported the xray system.yaml  to [8_xray_system_yaml.yaml](values/For_PROD_Setup/8_xray_system_yaml.yaml).
-Set the shared.rabbitMq.password to using the correct "clear_text_admin_password_for_rabbitmq" .
-Then create the secret:
-
-```
-kubectl delete secret xray-custom-systemyaml -n $JFROG_PLATFORM_NAMESPACE
-kubectl create secret generic xray-custom-systemyaml --from-file=system.yaml=./8_xray_system_yaml.yaml \
--n $JFROG_PLATFORM_NAMESPACE
-
-```
-Then use secret xray-custom-systemyaml to do the systemYamlOverride for xray: 
-```
-python yaml-merger.py tmp/7_mergedfile.yaml 8_override_xray_system_yaml_in_values.yaml > tmp/8_mergedfile.yaml
-``` 
-Next upgrade install to do the systemYamlOverride for xray . If you have ALB use that instead of nginx
-in "--set global.jfrogUrlUI" in below command
-```text
-helm  upgrade --install $JFROG_PLATFORM_NAME \
--f tmp/8_mergedfile.yaml \
---namespace $JFROG_PLATFORM_NAMESPACE jfrog/jfrog-platform  \
---set gaUpgradeReady=true \
---set global.jfrogUrlUI="http://104.196.98.19" 
-```
-
-
----
-**Enable JAS**
-
-If xray is up and is now integrated with Artifactory , you can perform the Xray DBSync.
-After that enable JAS in the helm values.yaml:
-
-```
-python yaml-merger.py tmp/8_mergedfile.yaml 9_enable_JAS.yaml > tmp/9_mergedfile.yaml
-```
-
-Next do the helm upgrade to install / enable JAS:
-```text
-helm  upgrade --install $JFROG_PLATFORM_NAME \
--f tmp/9_mergedfile.yaml \
---namespace $JFROG_PLATFORM_NAMESPACE jfrog/jfrog-platform  \
---set gaUpgradeReady=true \
---set global.jfrogUrlUI="http://104.196.98.19" \
---dry-run
-```
-
-k get deployment
-```
-NAME                                          READY   UP-TO-DATE   AVAILABLE   AGE
-cloudsql-proxy                                1/1     1            1           5d20h
-ps-jfrog-platform-release-artifactory-nginx   1/1     1            1           38h
-ps-jfrog-platform-release-catalog             1/1     1            1           37h
-```
-
-k get sts
-```       
-NAME                                    READY   AGE
-ps-jfrog-platform-release-artifactory   1/1     38h
-ps-jfrog-platform-release-rabbitmq      1/1     37h
-ps-jfrog-platform-release-xray          1/2     37h
-```
-
--->
-
----
 
 ### FAQs:
 How to set the artifactory's artifactory.artifactory.replicaCount to 1 ?
