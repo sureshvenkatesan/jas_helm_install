@@ -1,7 +1,7 @@
 
 ## Step-by-Step install of Artifactory, Xray, JAS, Catalog, Curation
 
-Instead of installing Artifactory, Xray and JAS all in one shot (in AWS EKS or in GKE ), it is recommended to :
+<!-- Instead of installing Artifactory, Xray and JAS all in one shot (in AWS EKS or in GKE ), it is recommended to :
 ```text
 a) Create  the secrets ( for all user passwords, binarystore configuration , system.yaml etc) 
 b) first install  Artifactory , login to it and set the Artifactory base url
@@ -19,7 +19,28 @@ The steps to do the above using the [jfrog/platform](https://github.com/jfrog/ch
 It also shows :
 - how to use the [envsubst](https://www.gnu.org/software/gettext/manual/html_node/envsubst-Invocation.html) command 
   to get the values to create the  secrets from environmental variables. 
-- the step-by-step approach to improvise the values.yaml to generate the final values.yaml needed for the helm install
+- the step-by-step approach to improvise the values.yaml to generate the final values.yaml needed for the helm install -->
+
+Rather than installing Artifactory, Xray, and JAS all at once (on AWS EKS, GKE, etc.), it is recommended to follow this sequence:
+
+```text
+a) Create the necessary secrets (for user passwords, binarystore configuration, system.yaml, etc.)
+b) Install Artifactory first, log in, and configure the Artifactory base URL
+c) Install Xray and verify its successful connection to Artifactory
+d) Perform Xray DB Sync
+e) Enable JAS
+f) Enable Package Catalog and Curation
+```
+
+This README explains how to perform the above steps using the [jfrog/platform](https://github.com/jfrog/charts/tree/master/stable/jfrog-platform) chart by managing a nested `values.yaml` built from the following child charts:
+- [jfrog/artifactory](https://github.com/jfrog/charts/tree/master/stable/artifactory)
+- [jfrog/xray](https://github.com/jfrog/charts/tree/master/stable/xray) (for Xray and JAS)
+- [catalog](https://github.com/jfrog/charts/tree/master/stable/catalog)
+
+It also covers:
+- How to use the [`envsubst`](https://www.gnu.org/software/gettext/manual/html_node/envsubst-Invocation.html) command to populate secrets from environment variables
+- A step-by-step method to refine the `values.yaml` file and produce the final version required for the Helm installation
+
 
 <!-- Note: I Initially used  [yaml-merger-py](https://github.com/Aref-Riant/yaml-merger-py) , [../../scripts/merge_yaml_with_comments.py](../../scripts/merge_yaml_with_comments.py) but these are not necessary now.
 We still need the [../../scripts/nest_yaml_with_comments.py](../../scripts/nest_yaml_with_comments.py) -->
@@ -267,7 +288,6 @@ Create the Namespace:
 ```
 kubectl create ns  $MY_NAMESPACE
 ```
-Optional: I used the steps in [Creating only "CloudSql proxy" and secrets for "binarystore.xml"](https://github.com/sureshvenkatesan/jf-gcp-env/tree/feature/jf_with_cloudsql?tab=readme-ov-file#creating-only-cloudsql-proxy-and-secrets-for-binarystorexml-) which also creates the Namespace via terraform.
 
 **Or**
 
@@ -311,8 +331,9 @@ Delete Namespace only if needed as this will delete all the secrets as well:
 ```text
 kubectl delete ns  $MY_NAMESPACE
 ```
-Optional: I used the steps in [Creating only "CloudSql proxy" and secrets for "binarystore.xml"](https://github.com/sureshvenkatesan/jf-gcp-env/tree/feature/jf_with_cloudsql?tab=readme-ov-file#creating-only-cloudsql-proxy-and-secrets-for-binarystorexml-) which also creates the Namespace via terraform.
 
+**Specific to my Lab Setup:**  
+I followed the steps outlined in [Creating only "CloudSQL proxy" and secrets for "binarystore.xml"](https://github.com/sureshvenkatesan/jf-gcp-env/tree/feature/jf_with_cloudsql?tab=readme-ov-file#creating-only-cloudsql-proxy-and-secrets-for-binarystorexml-), which also provisions the Namespace using Terraform.
 
 ---
 
@@ -352,7 +373,6 @@ kubectl get secret artifactory-license -o json -n $MY_NAMESPACE | jq -r '.data."
 
 ```
 
-
 <!-- Note: if you create it as the following then the dataKey will be art.lic ( i.e same as the name of the file)
 ```text
 kubectl create secret generic artifactory-license \  
@@ -365,9 +385,9 @@ kubectl create secret generic artifactory-license \
 
 ### 5. step-by-step approach to improvise the values.yaml  we will finally use:
 
-The settings from https://github.com/jfrog/charts/blob/master/stable/artifactory/sizing/artifactory-small.yaml are already included in https://github.com/jfrog/charts/blob/master/stable/jfrog-platform/sizing/platform-small.yaml ( as of Feb 14, 2025 )
+**Note:** As of February 14, 2025, the settings from [`artifactory-small.yaml`](https://github.com/jfrog/charts/blob/master/stable/artifactory/sizing/artifactory-small.yaml) are already incorporated into [`platform-small.yaml`](https://github.com/jfrog/charts/blob/master/stable/jfrog-platform/sizing/platform-small.yaml).
 
-File mentioned below are in [values/For_PROD_Setup](values/For_PROD_Setup)
+
 <!-- 
 #### a) Custom Configuration
 Start with the 1_artifactory-small.yaml for **TEST** environment or 1_artifactory-large.yaml for **PROD** 
@@ -471,11 +491,11 @@ kubectl apply -f binarystore_config/custom-binarystore.yaml -n $MY_NAMESPACE
 ---
 
 #### d) Tuning as per KB
-The tuning configuration in KB [How do I tune Artifactory for heavy loads?](https://jfrog.com/help/r/how-do-i-tune-artifactory-for-heavy-loads/how-do-i-tune-artifactory-for-heavy-loads) is already taken care in the [platform-small.yaml](https://github.com/jfrog/charts/blob/master/stable/jfrog-platform/sizing/platform-small.yaml) for TEST environment or [platform-large.yaml](https://github.com/jfrog/charts/blob/master/stable/jfrog-platform/sizing/platform-large.yaml) for PROD in Step1 , and the default values in
-- https://github.com/jfrog/charts/blob/master/stable/jfrog-platform/values.yaml
-- https://github.com/jfrog/charts/blob/master/stable/artifactory/values.yaml
 
-
+The tuning recommendations from the KB article [How do I tune Artifactory for heavy loads?](https://jfrog.com/help/r/how-do-i-tune-artifactory-for-heavy-loads/how-do-i-tune-artifactory-for-heavy-loads) are already incorporated into the [`platform-small.yaml`](https://github.com/jfrog/charts/blob/master/stable/jfrog-platform/sizing/platform-small.yaml) for TEST environments and [`platform-large.yaml`](https://github.com/jfrog/charts/blob/master/stable/jfrog-platform/sizing/platform-large.yaml) for PROD environments during Step 1.  
+Additionally, these tunings are reflected in the default values from:
+- [`jfrog-platform/values.yaml`](https://github.com/jfrog/charts/blob/master/stable/jfrog-platform/values.yaml)
+- [`artifactory/values.yaml`](https://github.com/jfrog/charts/blob/master/stable/artifactory/values.yaml)
 
 <!-- 5.  Override the system.yaml using either 5_artifactory_system_small.yaml for TEST environment or 
     5_artifactory_system_large.yaml for PROD as per KB [How do I tune Artifactory for heavy loads?](https://jfrog.com/help/r/how-do-i-tune-artifactory-for-heavy-loads/how-do-i-tune-artifactory-for-heavy-loads)
@@ -513,18 +533,19 @@ helm  upgrade --install $MY_HELM_RELEASE \
 --set artifactory.global.joinKeySecretName="joinkey-secret" \
 --version "${JFROG_PLATFORM_CHART_VERSION}"  
 ```
-Note: The artifactory pod is a statefulset and the size of the PVC is sepcified in `artifactory.persistence.mountPath` i.e `/var/opt/jfrog/artifactory`  when the  ``artifactory.persistence.enabled` is `true` and defaults to 200Gi   when using the platform chart as in `artifactory.artifactory.persistence.size` ( see https://github.com/jfrog/charts/blob/master/stable/jfrog-platform/values.yaml#L285 ). 
-If you use GCP storage and set `artifactory.artifactory.persistence.customBinarystoreXmlSecret` and `artifactory.artifactory.persistence.googleStorage` the `filestore` will not be seen under `/var/opt/jfrog/artifactory/data/artifactory`  i.,e PVC size does not include the googleStorage bucket size. The googleStorage usage can only be see from "Administration > Monitoring > Storage" in the Artitfactory UI.
 
+**Note:**  
+The Artifactory pod is deployed as a StatefulSet, and the PVC size is determined by the `artifactory.persistence.mountPath` setting (i.e., `/var/opt/jfrog/artifactory`) when `artifactory.persistence.enabled` is set to `true`. By default, when using the Platform chart, the size is set to `200Gi` via the `artifactory.artifactory.persistence.size` parameter (see [values.yaml line 285](https://github.com/jfrog/charts/blob/master/stable/jfrog-platform/values.yaml#L285)).
 
-Similarly the Xray pod statefulset PVC size is specified in `xray.common.persisitence.size` to 200Gi which I am overriding in [values/For_PROD_Setup/6_xray_db_passwords.yaml](values/For_PROD_Setup/6_xray_db_passwords.yaml) to 100Gi.
-But when using JAS it is recommended that this be increased to minimum of 400Gi  in one of the earlier T-shirt sizing in https://github.com/jfrog/charts/tree/master/stable/xray/sizing or "300 to 500 GB" mentioned in below references.
+If you configure GCP storage by setting `artifactory.artifactory.persistence.customBinarystoreXmlSecret` and `artifactory.artifactory.persistence.googleStorage`, the filestore will **not** reside under `/var/opt/jfrog/artifactory/data/artifactory`. In this case, the PVC size does **not** include the Google Cloud Storage bucket size. The Google Storage usage can only be monitored via the Artifactory UI under **Administration > Monitoring > Storage**.
 
-**Ref:**
+Similarly, the Xray pod (also a StatefulSet) defines its PVC size through `xray.common.persistence.size`, which defaults to `200Gi`. In my setup, I override this value to `100Gi` in [`values/For_PROD_Setup/6_xray_db_passwords.yaml`](values/For_PROD_Setup/6_xray_db_passwords.yaml).  
+However, when using JAS, it is recommended to increase the PVC size to at least `400Gi`, as noted in earlier T-shirt sizing recommendations from [Xray sizing](https://github.com/jfrog/charts/tree/master/stable/xray/sizing) or "300–500 GB" as mentioned in the following references:
+
+**References:**
 - [JFrog Advanced Security Prerequisites](https://jfrog.com/help/r/jfrog-installation-setup-documentation/jfrog-advanced-security-prerequisites)
 - [JFrog Platform: Reference Architecture](https://jfrog.com/help/r/jfrog-platform-reference-architecture/jfrog-platform-reference-architecture)
-- [Artifactory Self-Hosted Performance Benchmark Report - PostgreSQL](https://jfrog.com/help/r/artifactory-artifactory-self-hosted-performance-benchmark-report-may-2024/artifactory-self-hosted-performance-benchmark-report-postgresql)
-
+- [Artifactory Self-Hosted Performance Benchmark Report – PostgreSQL](https://jfrog.com/help/r/artifactory-artifactory-self-hosted-performance-benchmark-report-may-2024/artifactory-self-hosted-performance-benchmark-report-postgresql)
 
 
 #### f) Troubleshooting Artifactory Startup:
@@ -548,14 +569,16 @@ kubectl exec -it ps-jfrog-platform-release-artifactory-0 -c artifactory  -- cat 
 ```
 ---
 **Optional Steps:**
-- Set the base url the output you see from below in the `http://$SERVICE_HOSTNAME/ui/admin/configuration/general`:
+- Set the Artifactory base url using the output you see from below in the `http://$SERVICE_HOSTNAME/ui/admin/configuration/general`:
 ```
 export SERVICE_HOSTNAME=$(kubectl get svc --namespace ps-jfrog-platform ps-jfrog-platform-release-artifactory-nginx --template "{{ (index .status.loadBalancer.ingress 0).ip }}")
 echo http://$SERVICE_HOSTNAME
 ```
 For example I set it to: http://100.231.185.7 . 
 
-- Set  the Server Name . For example: I set it to "sureshvps".
+- Set  the Server Name . 
+
+For example: I set it to "sureshvps".
 
 ---
 **Upload File to a Local Repository**
@@ -635,25 +658,26 @@ kubectl create secret generic xray-custom-systemyaml --from-file=system.yaml=tmp
  
 #### b) Secret for Rabbitmq admin password:
 
-The rabbitmq user name as per https://github.com/jfrog/charts/blob/master/stable/xray/values.yaml#L514 is hardcoded
-to "guest" .It can be set to "admin" only as value and not as secrert as per  
-https://github.com/bitnami/charts/blob/main/bitnami/rabbitmq/values.yaml#L155
+The RabbitMQ username, as defined in [Xray's `values.yaml`](https://github.com/jfrog/charts/blob/master/stable/xray/values.yaml#L514), is hardcoded to `"guest"`. It can only be changed to `"admin"` through a value setting, not through a secret, as specified in [Bitnami's `values.yaml`](https://github.com/bitnami/charts/blob/main/bitnami/rabbitmq/values.yaml#L155).  
+We configure it as `"admin"` using `rabbitmq.auth.username` in [`6_xray_db_passwords.yaml`](values/For_PROD_Setup/6_xray_db_passwords.yaml).
 
-Also to pass the rabbitmq password as secret use the key as `rabbitmq-password` 
+Also configure the RabbitMQ password using a secret (with the key `rabbitmq-password`) by setting `rabbitmq.auth.existingPasswordSecret`, as demonstrated in [`6_xray_db_passwords.yaml`](values/For_PROD_Setup/6_xray_db_passwords.yaml).
+
 ```
 kubectl create secret generic rabbitmq-admin-creds \
 --from-literal=rabbitmq-password=$MY_RABBITMQ_ADMIN_USER_PASSWORD -n $MY_NAMESPACE 
 ```
 <!-- --from-literal=url=amqp://$MY_HELM_RELEASE-rabbitmq:5672  -->
 
-This is used in [6_xray_db_passwords.yaml](values/For_PROD_Setup/6_xray_db_passwords.yaml)
+
 
 #### c) Nest the xray sizing yaml file from Xray chart:
-Take the  https://github.com/jfrog/charts/blob/master/stable/xray/sizing/xray-xsmall.yaml 
-( or the T-shirt size yaml you want for Xray) and intdent it under "xray:" to use it with the jfrog/platform chart.
-I used this approach because I want to use :
-- Artifactory with [platform-small.yaml](https://github.com/jfrog/charts/blob/master/stable/jfrog-platform/sizing/platform-small.yaml) T-shirt size and
-- Xray with [platform-xsmall.yaml](https://github.com/jfrog/charts/blob/master/stable/jfrog-platform/sizing/platform-xsmall.yaml) T-shirt size 
+
+Take the sizing file from [`xray-xsmall.yaml`](https://github.com/jfrog/charts/blob/master/stable/xray/sizing/xray-xsmall.yaml) (or whichever T-shirt size YAML you prefer for Xray) and indent its contents under the `xray:` section to use it with the `jfrog/platform` chart.  
+I followed this approach because I wanted to use:
+- Artifactory with the [`platform-small.yaml`](https://github.com/jfrog/charts/blob/master/stable/jfrog-platform/sizing/platform-small.yaml) T-shirt size
+- Xray with the [`platform-xsmall.yaml`](https://github.com/jfrog/charts/blob/master/stable/jfrog-platform/sizing/platform-xsmall.yaml) T-shirt size
+
 ```
 python ../../scripts/nest_yaml_with_comments.py 6_xray-xsmall.yaml \
  xray -o 6_xray-xsmall-nested.yaml 
@@ -997,22 +1021,26 @@ kubectl logs -f ps-jfrog-platform-release-pre-upgrade-check-26fdg -n $MY_NAMESPA
 kubectl logs -f ps-jfrog-platform-release-xray-pre-upgrade-hook-9xzwk -n $MY_NAMESPACE
 ``` -->
 
-Note: As mentioned in [JFrog Advanced Security Readiness Checking](https://jfrog.com/help/r/jfrog-installation-setup-documentation/jfrog-advanced-security-readiness-checking) since we are `Enabling Health Check Cron Job` with the following in [values/For_PROD_Setup/9_enable_JAS.yaml](values/For_PROD_Setup/9_enable_JAS.yaml)
-You should see the JAS feature is enabled in the platform in `Administration > Xray Settings` i.e the 
+**Note:**  
+As explained in [JFrog Advanced Security Readiness Checking](https://jfrog.com/help/r/jfrog-installation-setup-documentation/jfrog-advanced-security-readiness-checking), since we are enabling the **Health Check Cron Job** through the following configuration in [`values/For_PROD_Setup/9_enable_JAS.yaml`](values/For_PROD_Setup/9_enable_JAS.yaml):
 
-`Enable JAS health check (takes effect only after xray restart)` check box is enabled.
-```
- xray:
- ## JAS periodic health check
+```yaml
+xray:
+  ## JAS periodic health check
   jas:
     healthcheck:
       enabled: true
 ```
 
-Note: JAS scans run as a K8s job , so you will see the pods from the job only when you "Scan for Contextual Analysis".
-At that time when you run the following , it will show the pods that are running for the job.
-```text
-watch kubectl get pods  -n $MY_NAMESPACE
+You should see the JAS feature enabled in the platform UI under **Administration > Xray Settings**, specifically the checkbox for  
+**"Enable JAS health check (takes effect only after Xray restart)"**.
+
+**Additional Note:**  
+JAS scans are executed as Kubernetes jobs. You will see pods created by these jobs **only when** you initiate a **"Scan for Contextual Analysis"**.  
+At that time, you can run the following command to watch the pods related to the job:
+
+```bash
+watch kubectl get pods -n $MY_NAMESPACE
 ```
 
 As per [JFrog Advanced Security Readiness Checking](https://jfrog.com/help/r/jfrog-installation-setup-documentation/jfrog-advanced-security-readiness-checking) :
