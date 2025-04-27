@@ -4,6 +4,10 @@ xray:
     create: true
   rbac:
     create: true
+  ## JAS periodic health check
+  jas:
+    healthcheck:
+      enabled: true
   #End of required block for JAS
   # common:
   #   extraEnvVars: |

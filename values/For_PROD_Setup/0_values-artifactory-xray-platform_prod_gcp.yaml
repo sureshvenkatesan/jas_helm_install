@@ -9,9 +9,9 @@ global:
 
 
   versions:
-    # As of Apr 16, 2025
-    artifactory: 7.104.15
-    xray: 3.111.24
+    # As of Apr 24, 2025
+    artifactory: 7.111.4
+    xray: 3.111.25
 # For external DB
   database:
     # If you are using external postgresql, set initDBCreation: false
