@@ -21,8 +21,8 @@ It also shows :
   to get the values to create the  secrets from environmental variables. 
 - the step-by-step approach to improvise the values.yaml to generate the final values.yaml needed for the helm install
 
-Note: I Initially used  [yaml-merger-py](https://github.com/Aref-Riant/yaml-merger-py) , [../../scripts/merge_yaml_with_comments.py](../../scripts/merge_yaml_with_comments.py) but these are not necessary now.
-We still need the [../../scripts/nest_yaml_with_comments.py](../../scripts/nest_yaml_with_comments.py)
+<!-- Note: I Initially used  [yaml-merger-py](https://github.com/Aref-Riant/yaml-merger-py) , [../../scripts/merge_yaml_with_comments.py](../../scripts/merge_yaml_with_comments.py) but these are not necessary now.
+We still need the [../../scripts/nest_yaml_with_comments.py](../../scripts/nest_yaml_with_comments.py) -->
 
   
 Note: You can parse the https://github.com/jfrog/charts/blob/master/stable/jfrog-platform/values.yaml  with  https://yaml.vercel.app/ 
@@ -155,7 +155,7 @@ Once your cluster is all enabled, you can install the Jfrog platform using value
 
 ### Prerequisites:
 
-Please download the  python script to merge values.yaml files with best effort to preserve comments, formatting,
+<!-- Please download the  python script to merge values.yaml files with best effort to preserve comments, formatting,
 and order of items from https://github.com/Aref-Riant/yaml-merger-py
 
 Requirements:
@@ -167,7 +167,7 @@ pip install mergedeep
 Usage:
 ```
 python yaml-merger.py file1.yaml file2.yaml > mergedfile.yaml
-```
+``` -->
 Install `envsubst` as per https://skofgar.ch/dev/2020/08/how-to-quickly-replace-environment-variables-in-a-file/
 ```
 brew install gettext
@@ -181,20 +181,40 @@ helm repo update
 
 ```
 
+#### How do I find the jfrog/platform char version that will be used ?
+```
+helm search repo jfrog/jfrog-platform --versions |  head -n 2
+helm search repo jfrog/artifactory --versions |  head -n 2
+helm search repo jfrog/xray --versions |  head -n 2
+```
+or
+
+**Check the JFrog Charts GitHub Repository:**
+
+
+The `CHANGELOG.md` file in the `jfrog/charts` GitHub repository typically provides details about the latest releases: https://github.com/jfrog/charts/blob/master/stable/jfrog-platform/CHANGELOG.md.  
+By reviewing this file, you can track the release history and identify the most recent version.  
+As of April 24, 2025, the latest stable `JFROG_PLATFORM_CHART_VERSION` to use in your Helm upgrade command is **11.1.0**.
+
+
 ---
 
-1. Download this git repo and run:
+### 1. Swich to correct folder to run commands:
+Download this git repo.
+
+Next  run:
 ```text
 cd values/For_PROD_Setup
 ```
 
-2. Set the following Environmental variables based on your Deployment K8s environment where you will install the 
+### 2. Environment variables:
+Set the following Environmental variables based on your Deployment K8s environment where you will install the 
 JFrog Platform.
 
 **Note:** the CLOUD_PROVIDER can be gcp or aws ( JFrog Helm charts support Azure as well but this readme was created 
 only based on gcp or aws  )
 
-### Environment variables:
+
 ```text
 export CLOUD_PROVIDER=gcp
 export MY_NAMESPACE=ps-jfrog-platform
@@ -233,9 +253,9 @@ export CATALOG_DATABASE_USER=catalog
 export CATALOG_DATABASE_PASSWORD=catalog
 export CATALOG_DB=catalogdb
 
-export RT_VERSION=7.104.15
-export JFROG_PLATFORM_CHART_VERSION=11.0.6
-export XRAY_VERSION=3.111.24
+export RT_VERSION=7.111.4
+export JFROG_PLATFORM_CHART_VERSION=11.1.0
+export XRAY_VERSION=3.111.25
 ```
 ---
 
@@ -345,10 +365,10 @@ kubectl create secret generic artifactory-license \
 
 ### 5. step-by-step approach to improvise the values.yaml  we will finally use:
 
-Ref: https://github.com/jfrog/charts/blob/master/stable/artifactory/sizing/artifactory-small.yaml
+The settings from https://github.com/jfrog/charts/blob/master/stable/artifactory/sizing/artifactory-small.yaml are already included in https://github.com/jfrog/charts/blob/master/stable/jfrog-platform/sizing/platform-small.yaml ( as of Feb 14, 2025 )
 
-File mentioned below are in [For_PROD_Setup](values/For_PROD_Setup)
-
+File mentioned below are in [values/For_PROD_Setup](values/For_PROD_Setup)
+<!-- 
 #### a) Custom Configuration
 Start with the 1_artifactory-small.yaml for **TEST** environment or 1_artifactory-large.yaml for **PROD** 
 environment
@@ -370,7 +390,7 @@ python ../../scripts/nest_yaml_with_comments.py 1_artifactory-small.yaml \
 python ../../scripts/merge_yaml_with_comments.py 0_values-artifactory-xray-platform_prod_$CLOUD_PROVIDER.yaml 1_artifactory-small-nested.yaml -o tmp2/1_mergedfile.yml
 
 ```
-<!-- 
+
 ```
 python yaml-merger.py 0_values-artifactory-xray-platform_prod_$CLOUD_PROVIDER.yaml 1_artifactory-small.yaml > tmp/1_mergedfile.yaml
 or
@@ -379,8 +399,8 @@ python yaml-merger.py 0_values-artifactory-xray-platform_prod_$CLOUD_PROVIDER.ya
 --> 
 
 ---
-#### b) Artifactory Database Credentials:
-Override using the 2_artifactory_db_passwords.yaml
+#### a) Artifactory Database Credentials:
+Override using the [2_artifactory_db_passwords.yaml](values/For_PROD_Setup/2_artifactory_db_passwords.yaml)
 
 
 ```text
@@ -392,12 +412,12 @@ kubectl create secret generic artifactory-database-creds \
 --from-literal=db-url=jdbc:postgresql://$DB_SERVER:5432/$ARTIFACTORY_DB -n $MY_NAMESPACE
 ```
 
-```
+<!-- ```
 python ../../scripts/merge_yaml_with_comments.py tmp2/1_mergedfile.yml 2_artifactory_db_passwords.yaml -o tmp2/2_mergedfile.yaml
 
-```
-
+``` -->
 <!-- 
+
 ```
 python yaml-merger.py tmp/1_mergedfile.yaml 2_artifactory_db_passwords.yaml > tmp/2_mergedfile.yaml 
 ```
@@ -405,8 +425,8 @@ python yaml-merger.py tmp/1_mergedfile.yaml 2_artifactory_db_passwords.yaml > tm
 
 ---
 
-#### c) The artifactory default admin user secret:
-Override using 3_artifactory_admin_user.yaml 
+#### b) The artifactory default admin user secret:
+Override using [3_artifactory_admin_user.yaml](values/For_PROD_Setup/3_artifactory_admin_user.yaml)
 
 Review KB [ARTIFACTORY: How To Unlock A User(s) Who Is Locked Out Of Artifactory and Recover Admin Account](https://jfrog.com/help/r/artifactory-how-to-unlock-a-user-s-who-is-locked-out-of-artifactory-and-recover-admin-account)
 
@@ -416,17 +436,17 @@ kubectl delete secret  art-creds  -n $MY_NAMESPACE
 kubectl create secret generic art-creds --from-literal=bootstrap.creds='admin@*=Test@123' -n $MY_NAMESPACE
 ```
 
-```
+<!-- ```
 python ../../scripts/merge_yaml_with_comments.py tmp2/2_mergedfile.yaml 3_artifactory_admin_user.yaml -o tmp2/3_mergedfile.yaml
 
-```
+``` -->
 <!-- python yaml-merger.py tmp/2_mergedfile.yaml 3_artifactory_admin_user.yaml > tmp/3_mergedfile.yaml -->
 
 ---
 
-#### d) Override the binaryStore
+#### c) Override the binaryStore
 
-For AWS use [S3 Direct Upload Template (Recommended)](https://jfrog.com/help/r/jfrog-installation-setup-documentation/s3-direct-upload-template-recommended) :
+For AWS use [S3 Direct Upload Template (Recommended)](https://jfrog.com/help/r/jfrog-installation-setup-documentation/s3-direct-upload-template-recommended) . For example: [4_custom-binarystore-s3-direct-use_instance-creds.yaml](values/For_PROD_Setup/4_custom-binarystore-s3-direct-use_instance-creds.yaml) :
 ```
 kubectl apply -f 4_custom-binarystore-s3-direct-use_instance-creds.yaml -n $MY_NAMESPACE
 ```
@@ -434,7 +454,9 @@ or
 
 For GCP use [google-storage-v2-direct template configuration (Recommended)](https://jfrog.com/help/r/jfrog-installation-setup-documentation/google-storage-v2-direct-template-configuration-recommended) mentioned in [Google Storage Binary Provider Native Client Template](https://jfrog.com/help/r/jfrog-installation-setup-documentation/google-storage-binary-provider-native-client-template) :
 
-Note: I created the secrets `artifactory-gcp-creds` and `custom-binarystore`  in [Creating only "CloudSql proxy" and secrets for "binarystore.xml"](https://github.com/sureshvenkatesan/jf-gcp-env/tree/feature/jf_with_cloudsql?tab=readme-ov-file#creating-only-cloudsql-proxy-and-secrets-for-binarystorexml-)  as mentioned above , instead of the following 
+Note: In my lab I created the secrets `artifactory-gcp-creds` and `custom-binarystore`  with [Creating only "CloudSql proxy" and secrets for "binarystore.xml"](https://github.com/sureshvenkatesan/jf-gcp-env/tree/feature/jf_with_cloudsql?tab=readme-ov-file#creating-only-cloudsql-proxy-and-secrets-for-binarystorexml-) .
+
+Please create secrets `artifactory-gcp-creds` and `custom-binarystore` as mentiond below:
 
 ```
 kubectl delete secret  artifactory-gcp-creds -n $MY_NAMESPACE
@@ -448,8 +470,10 @@ kubectl apply -f binarystore_config/custom-binarystore.yaml -n $MY_NAMESPACE
 ```
 ---
 
-#### e) Tuning as per KB
-The tuning configuration in KB [How do I tune Artifactory for heavy loads?](https://jfrog.com/help/r/how-do-i-tune-artifactory-for-heavy-loads/how-do-i-tune-artifactory-for-heavy-loads) is already taken care in the 1_artifactory-small.yaml for TEST environment or 1_artifactory-large.yaml for PROD in Step1 , and the default values in https://github.com/jfrog/charts/blob/master/stable/artifactory/values.yaml
+#### d) Tuning as per KB
+The tuning configuration in KB [How do I tune Artifactory for heavy loads?](https://jfrog.com/help/r/how-do-i-tune-artifactory-for-heavy-loads/how-do-i-tune-artifactory-for-heavy-loads) is already taken care in the [platform-small.yaml](https://github.com/jfrog/charts/blob/master/stable/jfrog-platform/sizing/platform-small.yaml) for TEST environment or [platform-large.yaml](https://github.com/jfrog/charts/blob/master/stable/jfrog-platform/sizing/platform-large.yaml) for PROD in Step1 , and the default values in
+- https://github.com/jfrog/charts/blob/master/stable/jfrog-platform/values.yaml
+- https://github.com/jfrog/charts/blob/master/stable/artifactory/values.yaml
 
 
 
@@ -467,12 +491,19 @@ kubectl create secret generic artifactory-custom-systemyaml --from-file=system.y
 -n $MY_NAMESPACE
 ``` -->
 
-#### f) Deploy Artifactory
+#### e) Deploy Artifactory
+Verify the enabled services using:
+```
+yq eval -o=json '.' "0_values-artifactory-xray-platform_prod_$CLOUD_PROVIDER.yaml" | jq -r 'paths(scalars) | join(".")'
+
+yq eval -o=json '.' "0_values-artifactory-xray-platform_prod_$CLOUD_PROVIDER.yaml" | jq -r 'paths(scalars) as $p | {"\($p | join("."))": getpath($p)}' | grep -i enabled
+```
+
 Deploy Artifactory using helm , then check if artifactory server starts and you can login to the Artifactory UI.
 ```
 helm  upgrade --install $MY_HELM_RELEASE \
 -f 0_values-artifactory-xray-platform_prod_$CLOUD_PROVIDER.yaml \
--f 1_artifactory-small-nested.yaml \
+-f platform-small.yaml \
 -f 2_artifactory_db_passwords.yaml \
 -f 3_artifactory_admin_user.yaml  \
 --namespace $MY_NAMESPACE jfrog/jfrog-platform  \
@@ -480,7 +511,7 @@ helm  upgrade --install $MY_HELM_RELEASE \
 --set global.versions.artifactory="${RT_VERSION}" \
 --set artifactory.global.masterKeySecretName="rt-masterkey-secret" \
 --set artifactory.global.joinKeySecretName="joinkey-secret" \
---version "${JFROG_PLATFORM_CHART_VERSION}" 
+--version "${JFROG_PLATFORM_CHART_VERSION}"  
 ```
 Note: The artifactory pod is a statefulset and the size of the PVC is sepcified in `artifactory.persistence.mountPath` i.e `/var/opt/jfrog/artifactory`  when the  ``artifactory.persistence.enabled` is `true` and defaults to 200Gi   when using the platform chart as in `artifactory.artifactory.persistence.size` ( see https://github.com/jfrog/charts/blob/master/stable/jfrog-platform/values.yaml#L285 ). 
 If you use GCP storage and set `artifactory.artifactory.persistence.customBinarystoreXmlSecret` and `artifactory.artifactory.persistence.googleStorage` the `filestore` will not be seen under `/var/opt/jfrog/artifactory/data/artifactory`  i.,e PVC size does not include the googleStorage bucket size. The googleStorage usage can only be see from "Administration > Monitoring > Storage" in the Artitfactory UI.
@@ -496,7 +527,7 @@ But when using JAS it is recommended that this be increased to minimum of 400Gi 
 
 
 
-#### g) Troubleshooting Artifactory Startup:
+#### f) Troubleshooting Artifactory Startup:
 ```
 kubectl logs -f ps-jfrog-platform-release-artifactory-0 -n $MY_NAMESPACE
 kubectl logs -f ps-jfrog-platform-release-artifactory-0 -c artifactory -n $MY_NAMESPACE
@@ -515,27 +546,32 @@ kubectl exec -it ps-jfrog-platform-release-artifactory-0 -c artifactory  -- cat 
 kubectl exec -it ps-jfrog-platform-release-artifactory-0 -c artifactory  -- cat /opt/jfrog/artifactory/var/etc/security/master.key
 
 ```
-Set the base url the output you see from below in the `http://$SERVICE_HOSTNAME/ui/admin/configuration/general`:
+---
+**Optional Steps:**
+- Set the base url the output you see from below in the `http://$SERVICE_HOSTNAME/ui/admin/configuration/general`:
 ```
 export SERVICE_HOSTNAME=$(kubectl get svc --namespace ps-jfrog-platform ps-jfrog-platform-release-artifactory-nginx --template "{{ (index .status.loadBalancer.ingress 0).ip }}")
 echo http://$SERVICE_HOSTNAME
 ```
-For example I set it to: http://100.231.185.7 . I also set the Server Name to "sureshvps".
+For example I set it to: http://100.231.185.7 . 
 
+- Set  the Server Name . For example: I set it to "sureshvps".
 
-Next Upload a file to `example-repo-local`  repository and see if it is successful , by tailing the artifactory-service.log using:
+---
+**Upload File to a Local Repository**
+- Next Upload a file to `example-repo-local`  repository and see if it is successful , by tailing the artifactory-service.log using:
 ```
 kubectl logs -f ps-jfrog-platform-release-artifactory-0 -c artifactory
 ```
 
-If it fails check the binaryStore.xml using:
+If it fails check the binarystore.xml using:
 ```
 kubectl exec -it ps-jfrog-platform-release-artifactory-0 -c artifactory --namespace ps-jfrog-platform -- ls -al  /opt/jfrog/artifactory/var/etc/artifactory
 
 kubectl exec -it ps-jfrog-platform-release-artifactory-0 -c artifactory --namespace ps-jfrog-platform -- cat /opt/jfrog/artifactory/var/etc/artifactory/binarystore.xml
 ```
 
-Since I used GCP I also verifioed if I have the correct GCP service account using:
+Since I used GCP I also verified if I have the correct GCP service account using:
 ```
 kubectl exec -it ps-jfrog-platform-release-artifactory-0 -c artifactory --namespace ps-jfrog-platform -- cat /opt/jfrog/artifactory/var/etc/artifactory/gcp.credentials.json
 
@@ -562,10 +598,10 @@ After 5-6 min it should get resolved and you will see:
 ```
 Normal   SuccessfulAttachVolume  5m4s   attachdetach-controller  AttachVolume.Attach succeeded for volume "pvc-23719d6c-bf0f-488b-90e8-8818dacd3364"
 ```
-Then redo the file uplaod test to `example-repo-local`  repository and see if it is successful .
+Then redo a file upload test to `example-repo-local`  repository and see if it is successful .
 
 ---
-### 7. Deploying Xray
+### 6. Deploying Xray
 #### a) Xray Database secret
 
 
@@ -586,7 +622,7 @@ otherwise use:
 ```
 bash decode_secret.sh <secret-to-decrypt>  <namespace>
 ```
-#### b) Secret to override the xray system yaml
+<!-- #### b) Secret to override the xray system yaml
 **Note:** Secret to override the xray system.yaml is needed for Xray versions below v3.118 (XRAY-109797)  to set the
 share.rabbitMq.password via the `xray-custom-systemyaml`. For Xray versions >=v3.118 you an skip this step.
 ```
@@ -595,9 +631,9 @@ envsubst < 8_xray_system_yaml.tmpl > tmp2/8_xray_system_yaml.yaml
 kubectl delete  secret xray-custom-systemyaml -n $MY_NAMESPACE
 kubectl create secret generic xray-custom-systemyaml --from-file=system.yaml=tmp2/8_xray_system_yaml.yaml \
 -n $MY_NAMESPACE
-```
+``` -->
  
-#### c) Secret for Rabbitmq admin password:
+#### b) Secret for Rabbitmq admin password:
 
 The rabbitmq user name as per https://github.com/jfrog/charts/blob/master/stable/xray/values.yaml#L514 is hardcoded
 to "guest" .It can be set to "admin" only as value and not as secrert as per  
@@ -612,9 +648,12 @@ kubectl create secret generic rabbitmq-admin-creds \
 
 This is used in [6_xray_db_passwords.yaml](values/For_PROD_Setup/6_xray_db_passwords.yaml)
 
-#### d) Nest the xray sizing yaml file from Xray chart:
+#### c) Nest the xray sizing yaml file from Xray chart:
 Take the  https://github.com/jfrog/charts/blob/master/stable/xray/sizing/xray-xsmall.yaml 
-( or the T-shirt size yaml you want for Xray) under "xray" to use it with the jfrog/platform chart.
+( or the T-shirt size yaml you want for Xray) and intdent it under "xray:" to use it with the jfrog/platform chart.
+I used this approach because I want to use :
+- Artifactory with [platform-small.yaml](https://github.com/jfrog/charts/blob/master/stable/jfrog-platform/sizing/platform-small.yaml) T-shirt size and
+- Xray with [platform-xsmall.yaml](https://github.com/jfrog/charts/blob/master/stable/jfrog-platform/sizing/platform-xsmall.yaml) T-shirt size 
 ```
 python ../../scripts/nest_yaml_with_comments.py 6_xray-xsmall.yaml \
  xray -o 6_xray-xsmall-nested.yaml 
@@ -625,21 +664,43 @@ python yaml-merger.py tmp/3_mergedfile.yaml 6_xray_db_passwords_pod_size-values-
 or
 python yaml-merger.py tmp/3_mergedfile.yaml 6_xray_db_passwords_pod_size-values-large.yaml > tmp/6_mergedfile.yaml
 ``` -->
-#### e) Deploy Xray as part of your JPD
+#### d) Deploy Xray 
 <!-- Override with the 6_xray_db_passwords_pod_size-values-small.yaml for TEST environment or 
    6_xray_db_passwords_pod_size-values-large.yaml for PROD -->
 
-Here is the helm command for Xray versions below v3.118 (XRAY-109797) :
+Note: In [values/For_PROD_Setup/6_xray_db_passwords.yaml](values/For_PROD_Setup/6_xray_db_passwords.yaml) I have set "JF_SHARED_RABBITMQ_VHOST" to "xray" in `xray.common.extraEnvVars` 
+
+Here is the helm command to enable  Xray:
+```
+helm  upgrade --install $MY_HELM_RELEASE \
+-f 0_values-artifactory-xray-platform_prod_$CLOUD_PROVIDER.yaml \
+-f platform-small.yaml \
+-f 2_artifactory_db_passwords.yaml \
+-f 3_artifactory_admin_user.yaml  \
+-f 6_xray-xsmall-nested.yaml \
+-f 6_xray_db_passwords.yaml \
+--namespace $MY_NAMESPACE jfrog/jfrog-platform  \
+--set gaUpgradeReady=true \
+--set global.versions.artifactory="${RT_VERSION}" \
+--set artifactory.global.masterKeySecretName="rt-masterkey-secret" \
+--set artifactory.global.joinKeySecretName="joinkey-secret" \
+--set global.versions.xray="${XRAY_VERSION}" \
+--set xray.global.masterKeySecretName="xray-masterkey-secret" \
+--set xray.global.joinKeySecretName="joinkey-secret" \
+--version "${JFROG_PLATFORM_CHART_VERSION}" 
+```
+
+<!-- Here is the helm command for Xray versions below v3.118 (XRAY-109797) :
 
 Note: Have to use "-f 8_override_xray_system_yaml_in_values.yaml"
 
-Note: In [values/For_PROD_Setup/6_xray_db_passwords.yaml](values/For_PROD_Setup/6_xray_db_passwords.yaml) I have set "JF_SHARED_RABBITMQ_VHOST" to "xray_haq" in `xray.common.extraEnvVars` 
+
 ```
 envsubst < 6_xray_db_passwords.tmpl > tmp2/6_xray_db_passwords.yaml
 
 helm  upgrade --install $MY_HELM_RELEASE \
 -f 0_values-artifactory-xray-platform_prod_$CLOUD_PROVIDER.yaml \
--f 1_artifactory-small-nested.yaml \
+-f platform-small.yaml \
 -f 2_artifactory_db_passwords.yaml \
 -f 3_artifactory_admin_user.yaml  \
 -f 6_xray-xsmall-nested.yaml \
@@ -712,9 +773,9 @@ Events:
 Delete the job and rerun the above "helm  upgrade --install" command and then after few seconds xray should start:
 ```
 kubectl delete job ps-jfrog-platform-release-pre-upgrade-check -n $MY_NAMESPACE
-```
+``` -->
 
-To verify this you can  tail the Artifactory's access log to see that Xray connects to Access service:
+You can  tail the Artifactory's access log to see that Xray connects to Access service:
 ```
 kubectl logs -f ps-jfrog-platform-release-artifactory-0 -c access -n $MY_NAMESPACE
 ```
@@ -790,7 +851,7 @@ cat /opt/jfrog/xray/var/log/xray-server-service.log
 tail -F /opt/jfrog/xray/var/log/xray-server-service.log
 ```
 
-
+<!-- 
 If in  the xray pod xray-service.log you see:
 ```
 JF_SHARED_DATABASE_URL              : postgres://cloudsql-proxy:5432/xray?sslmode=disable
@@ -846,10 +907,10 @@ The output is in [values/For_PROD_Setup/10_optional_load_definition.json](values
 **Resolution:**
 That is why in [values/For_PROD_Setup/6_xray_db_passwords.yaml](values/For_PROD_Setup/6_xray_db_passwords.yaml) I have set "JF_SHARED_RABBITMQ_VHOST" to `"xray_haq"` in `xray.common.extraEnvVars` to resolve avoid using the Platform's `"classic"`` `'xray'` **vhost** in rabbitMQ.
 
-See the new [values/For_PROD_Setup/10_optional_load_definition.json](values/For_PROD_Setup/10_optional_load_definition.json) that is used as of Apr 20, 2025.
+See the new [values/For_PROD_Setup/10_optional_load_definition.json](values/For_PROD_Setup/10_optional_load_definition.json) that is used as of Apr 20, 2025. -->
 
 ---
-#### Vhost Troubleshooting:
+<!-- #### Vhost Troubleshooting:
 If you still want the vhost `xray` as was used in `Platform "classic"`  you can do the following,
 but it is nit required:
 
@@ -873,53 +934,28 @@ but it is nit required:
  kubectl delete pod ps-jfrog-platform-release-xray-0 --namespace $MY_NAMESPACE
  ```
 
----
-### 7. Deploying JAS
+--- 
+-->
+### 7. Perform Xray DBSync
+If xray is up and is now integrated with Artifactory , you can perform the Xray DBSync.
 
+---
+### 8. Deploying JAS
 
 **Enable JAS**
 
-If xray is up and is now integrated with Artifactory , you can perform the Xray DBSync.
-After that enable JAS in the helm values.yaml - we will use [9_enable_JAS.yaml](values/For_PROD_Setup/9_enable_JAS.yaml)
-
-
-Next do the helm upgrade to install / enable JAS:
-
-Here is the helm command for Xray versions below v3.118 (XRAY-109797) :
+Enable JAS  with the helm values override in  [9_enable_JAS.yaml](values/For_PROD_Setup/9_enable_JAS.yaml)
 
 ```
 helm  upgrade --install $MY_HELM_RELEASE \
 -f 0_values-artifactory-xray-platform_prod_$CLOUD_PROVIDER.yaml \
--f 1_artifactory-small-nested.yaml \
--f 2_artifactory_db_passwords.yaml \
--f 3_artifactory_admin_user.yaml  \
--f 6_xray-xsmall-nested.yaml \
--f tmp2/6_xray_db_passwords.yaml \
--f 8_override_xray_system_yaml_in_values.yaml \
--f 9_enable_JAS.yaml \
---namespace $MY_NAMESPACE jfrog/jfrog-platform \
---set gaUpgradeReady=true \
---set global.versions.artifactory="${RT_VERSION}" \
---set artifactory.global.masterKeySecretName="rt-masterkey-secret" \
---set artifactory.global.joinKeySecretName="joinkey-secret" \
---set global.versions.xray="${XRAY_VERSION}" \
---set xray.global.masterKeySecretName="xray-masterkey-secret" \
---set xray.global.joinKeySecretName="joinkey-secret" \
---set jas.healthcheck.enabled=true \
---version "${JFROG_PLATFORM_CHART_VERSION}" 
-```
-
-Here is the helm command for Xray versions >= v3.118 (XRAY-109797 fixed) :
-```
-helm  upgrade --install $MY_HELM_RELEASE \
--f 0_values-artifactory-xray-platform_prod_$CLOUD_PROVIDER.yaml \
--f 1_artifactory-small-nested.yaml \
+-f platform-small.yaml \
 -f 2_artifactory_db_passwords.yaml \
 -f 3_artifactory_admin_user.yaml  \
 -f 6_xray-xsmall-nested.yaml \
 -f 6_xray_db_passwords.yaml \
 -f 9_enable_JAS.yaml \
---namespace $MY_NAMESPACE jfrog/jfrog-platform \
+--namespace $MY_NAMESPACE jfrog/jfrog-platform  \
 --set gaUpgradeReady=true \
 --set global.versions.artifactory="${RT_VERSION}" \
 --set artifactory.global.masterKeySecretName="rt-masterkey-secret" \
@@ -927,10 +963,10 @@ helm  upgrade --install $MY_HELM_RELEASE \
 --set global.versions.xray="${XRAY_VERSION}" \
 --set xray.global.masterKeySecretName="xray-masterkey-secret" \
 --set xray.global.joinKeySecretName="joinkey-secret" \
---set jas.healthcheck.enabled=true \
 --version "${JFROG_PLATFORM_CHART_VERSION}" 
 ```
-##### Issue4: Another "pre-upgrade hooks failed" when enabling JAS:
+
+<!-- ##### Issue4: Another "pre-upgrade hooks failed" when enabling JAS:
 At one time the helm command exited with below error:
 ```
 Error: UPGRADE FAILED: pre-upgrade hooks failed: 1 error occurred:
@@ -959,9 +995,21 @@ Note: Usually there are no logs for these pods:
 ```
 kubectl logs -f ps-jfrog-platform-release-pre-upgrade-check-26fdg -n $MY_NAMESPACE
 kubectl logs -f ps-jfrog-platform-release-xray-pre-upgrade-hook-9xzwk -n $MY_NAMESPACE
+``` -->
+
+Note: As mentioned in [JFrog Advanced Security Readiness Checking](https://jfrog.com/help/r/jfrog-installation-setup-documentation/jfrog-advanced-security-readiness-checking) since we are `Enabling Health Check Cron Job` with the following in [values/For_PROD_Setup/9_enable_JAS.yaml](values/For_PROD_Setup/9_enable_JAS.yaml)
+You should see the JAS feature is enabled in the platform in `Administration > Xray Settings` i.e the 
+
+`Enable JAS health check (takes effect only after xray restart)` check box is enabled.
+```
+ xray:
+ ## JAS periodic health check
+  jas:
+    healthcheck:
+      enabled: true
 ```
 
-Note: JAS runs as a k8s job , so you will see the pods from the job only when you "Scan for Contextual Analysis".
+Note: JAS scans run as a K8s job , so you will see the pods from the job only when you "Scan for Contextual Analysis".
 At that time when you run the following , it will show the pods that are running for the job.
 ```text
 watch kubectl get pods  -n $MY_NAMESPACE
@@ -1012,21 +1060,21 @@ In this check for
 }
 ```
 
-Also you should see following in xray service logs:
+Check JAS is enabled in xray service logs:
 ```
 kubectl logs -f ps-jfrog-platform-release-xray-0 -c xray-server -n $MY_NAMESPACE | grep -i jas
 ```
 Output:
 ```
 2025-04-21T05:20:36.552Z [jfxr ] [INFO ] [323448ee7ba33858] [job_manager:630               ] [MainServer                      ] Scheduling JAS Health Check
-2025-04-21T05:20:36.559Z [jfxr ] [INFO ] [323448ee7ba33858] [job_manager:658               ] [MainServer                      ] JAS Health Check is disabled, not setting healthCheckApiSetAndEnabled: <nil>, jasConfig.EnableHealthCheck: true
+2025-04-21T05:20:36.559Z [jfxr ] [INFO ] [323448ee7ba33858] [job_manager:658               ] [MainServer                      ] JAS Health Check is enabled ...
 ```
 
 ---
 
-### 8. Deploying JFrog Catalog
+### 9. Deploying JFrog Catalog
 Ref: [Install JFrog Catalog with Helm](https://jfrog.com/help/r/jfrog-installation-setup-documentation/install-jfrog-catalog-with-helm-and-openshift)
-https://jfrog-int.atlassian.net/wiki/spaces/XRAYRnD/pages/885325832/Installing+Catalog+Service+on+a+Dedicated+Kubernetes+Cluster+Using+Helm+Installers
+<!-- [Installing Catalog Service on a Dedicated Kubernetes Cluster Using Helm Installers](https://jfrog-int.atlassian.net/wiki/spaces/XRAYRnD/pages/885325832/Installing+Catalog+Service+on+a+Dedicated+Kubernetes+Cluster+Using+Helm+Installers) -->
 
 #### a) Catalog Database secret
 
@@ -1040,49 +1088,23 @@ kubectl create secret generic catalog-database-creds \
 ```
 
 #### b) enable Catalog in the helm values.yaml
-We will use [11_enable_catalog.yaml](values/For_PROD_Setup/11_enable_catalog.yaml)
+We will use [values/For_PROD_Setup/11_enable_catalog.yaml](values/For_PROD_Setup/11_enable_catalog.yaml)
 
 
 #### c) helm upgrade to install / enable Catalog:
 
-Here is the helm command for Xray versions below v3.118 (XRAY-109797) :
-
+Here is the helm command :
 ```
 helm  upgrade --install $MY_HELM_RELEASE \
 -f 0_values-artifactory-xray-platform_prod_$CLOUD_PROVIDER.yaml \
--f 1_artifactory-small-nested.yaml \
--f 2_artifactory_db_passwords.yaml \
--f 3_artifactory_admin_user.yaml  \
--f 6_xray-xsmall-nested.yaml \
--f tmp2/6_xray_db_passwords.yaml \
--f 8_override_xray_system_yaml_in_values.yaml \
--f 9_enable_JAS.yaml \
--f 11_enable_catalog.yaml \
---namespace $MY_NAMESPACE jfrog/jfrog-platform \
---set gaUpgradeReady=true \
---set global.versions.artifactory="${RT_VERSION}" \
---set artifactory.global.masterKeySecretName="rt-masterkey-secret" \
---set artifactory.global.joinKeySecretName="joinkey-secret" \
---set global.versions.xray="${XRAY_VERSION}" \
---set xray.global.masterKeySecretName="xray-masterkey-secret" \
---set xray.global.joinKeySecretName="joinkey-secret" \
---set jas.healthcheck.enabled=true \
---set catalog.global.masterKeySecretName="catalog-masterkey-secret" \
---set catalog.global.joinKeySecretName="joinkey-secret" \
---version "${JFROG_PLATFORM_CHART_VERSION}" 
-```
-Here is the helm command for Xray versions >= v3.118 (XRAY-109797 fixed) :
-```
-helm  upgrade --install $MY_HELM_RELEASE \
--f 0_values-artifactory-xray-platform_prod_$CLOUD_PROVIDER.yaml \
--f 1_artifactory-small-nested.yaml \
+-f platform-small.yaml \
 -f 2_artifactory_db_passwords.yaml \
 -f 3_artifactory_admin_user.yaml  \
 -f 6_xray-xsmall-nested.yaml \
 -f 6_xray_db_passwords.yaml \
 -f 9_enable_JAS.yaml \
 -f 11_enable_catalog.yaml \
---namespace $MY_NAMESPACE jfrog/jfrog-platform \
+--namespace $MY_NAMESPACE jfrog/jfrog-platform  \
 --set gaUpgradeReady=true \
 --set global.versions.artifactory="${RT_VERSION}" \
 --set artifactory.global.masterKeySecretName="rt-masterkey-secret" \
@@ -1090,13 +1112,11 @@ helm  upgrade --install $MY_HELM_RELEASE \
 --set global.versions.xray="${XRAY_VERSION}" \
 --set xray.global.masterKeySecretName="xray-masterkey-secret" \
 --set xray.global.joinKeySecretName="joinkey-secret" \
---set jas.healthcheck.enabled=true \
---set catalog.global.masterKeySecretName="catalog-masterkey-secret" \
---set catalog.global.joinKeySecretName="joinkey-secret" \
 --version "${JFROG_PLATFORM_CHART_VERSION}" 
 ```
 
-##### Issue5: Getting "pre-upgrade hooks failed" when enabling Curation and Package Catalog:
+
+<!-- ##### Issue5: Getting "pre-upgrade hooks failed" when enabling Curation and Package Catalog:
 If you see:
 ```
 coalesce.go:298: warning: cannot overwrite table with non table for artifactory.postgresql.metrics.extraEnvVars (map[])
@@ -1138,7 +1158,8 @@ kubectl delete pod ps-jfrog-platform-release-pre-upgrade-check-mj92t  ps-jfrog-p
 or
 ```
 kubectl get pods --namespace $MY_NAMESPACE --no-headers | grep ^ps-jfrog-platform-release | awk '{print $1}' | xargs kubectl delete pod --namespace $MY_NAMESPACE
-```
+``` -->
+
 Then you should  see a catalog pod running:
 ```
 kubectl  get pod --namespace $MY_NAMESPACE
@@ -1206,10 +1227,12 @@ shared:
             enabled: true
             level: info
 ``` 
+#### d) Render the "Package Catalog" menu in UI
+Access the "Package Catalog" menu in the UI directly by navigating to http://<jfrogUrl>:<port>/ui/catalog/packages/overview, without needing to use an incognito browser window.
 
 
-#### d) Check the Catalog health 
-http://35.229.53.7/catalog/api/v1/system/app_health
+#### e) Check the Catalog health 
+
 Catalog app_health API - 
 
 GET <base-url>/catalog/api/v1/system/app_health
@@ -1549,7 +1572,7 @@ ps-jfrog-platform-release-xray          1/2     37h
 ### FAQs:
 How to set the artifactory's artifactory.artifactory.replicaCount to 1 ?
 
-To edit the replica count of a StatefulSet in Kubernetes there are multiple options:
+To edit the replicaCount of a StatefulSet in Kubernetes there are multiple options:
 **Option1:** 
 You can directly  update its manifest file and then apply the 
 changes using `kubectl apply`.
@@ -1591,7 +1614,7 @@ This will update the StatefulSet with the new replica count. The StatefulSet con
 Option2:
 Yes, you can definitely reduce the replicas of a StatefulSet managed by Helm. Helm is a package manager for Kubernetes that allows you to define, install, and manage applications as Helm charts.
 
-Here's how you can modify the replica count of a StatefulSet deployed via Helm:
+Here's how you can modify the replicaCount of a StatefulSet deployed via Helm:
 
 1. **Get Values from Existing Release (Optional)**:
 
