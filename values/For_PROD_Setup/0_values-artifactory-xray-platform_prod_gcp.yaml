@@ -42,12 +42,13 @@ artifactory:
 #    url: jdbc:postgresql://jfrog-nonprod.c7ptfmckq2gt.us-east-1.rds.amazonaws.com:5432/artifactory
 #    user: artifactory
 #    password: <PASSWORD>
-
+  # For external DB
+  postgresql:
+    enabled: false
+  waitForDatabase: false
+  
   artifactory:
-    # For external DB
-    postgresql:
-      enabled: false
-    waitForDatabase: false
+
     
     admin:
 #      username: artifactoryadmin
