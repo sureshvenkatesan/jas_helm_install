@@ -481,23 +481,27 @@ kubectl exec -it ps-jfrog-platform-release-artifactory-0 -c router -- bash
 kubectl get secret artifactory-gcp-creds  -n $JFROG_PLATFORM_NAMESPACE -o json | jq '.data | map_values(@base64d)'
 ```
 **K8s Networking:**
+
 In my terrafrom setup of my k8s cluster (GKE in GCP) , I am using:
+
 **GCP Networking**
+```
 vpc_cidr       = "10.0.0.0/16"
 pods_cidr      = "10.1.0.0/16"
 services_cidr  = "10.2.0.0/16"
+```
 Check Pod’s Host IP via Downward API (Kubernetes-native way):
 ```
 kubectl get pod ps-jfrog-platform-release-artifactory-0  -n $JFROG_PLATFORM_NAMESPACE -o jsonpath='{.status.hostIP}'
 Output: 10.0.0.20 --> This is from the vpc_cidr
 ```
 Artifactory router container:
-``
+```
 kubectl exec -it ps-jfrog-platform-release-artifactory-0   -n $JFROG_PLATFORM_NAMESPACE  -c router -- hostname -i
 Output: 10.1.3.3 --> This is from the pods_cidr
 
 kubectl exec -it ps-jfrog-platform-release-artifactory-0   -n $JFROG_PLATFORM_NAMESPACE  -c router -- cat /etc/hosts
-``
+```
 
 
 ---
@@ -634,8 +638,8 @@ You can tail the Artifactory's access log to see that Xray connects to Access se
 kubectl logs -f ps-jfrog-platform-release-artifactory-0 -c access -n $JFROG_PLATFORM_NAMESPACE
 ```
 Xray router container connects to the Artifactory's access service via the ClusterIP service `ps-jfrog-platform-release-artifactory` port 8082 as mentioned in the `global.jfrogUrl` and then the access service sends the token 
-in the response via `shared.node.ip`  in the [Xray System YAML](https://jfrog.com/help/r/jfrog-installation-setup-documentation/xray-system-yaml)  which is 10.1.2.16 in below example
-``
+in the response via `shared.node.ip`  in the [Xray System YAML](https://jfrog.com/help/r/jfrog-installation-setup-documentation/xray-system-yaml)  which is `10.1.2.16` in below example
+```
 kubectl exec -it ps-jfrog-platform-release-xray-0  -n $JFROG_PLATFORM_NAMESPACE  -c router -- hostname -i
 10.1.2.16 --> This is from the pods_cidr. 
 ```
