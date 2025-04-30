@@ -397,7 +397,7 @@ Please create secrets `artifactory-gcp-creds` and `custom-binarystore` as mentio
 ```
 kubectl delete secret  artifactory-gcp-creds -n $JFROG_PLATFORM_NAMESPACE
 
-kubectl create secret generic artifactory-gcp-creds --from-file=/Users/sureshv/.gcp/support-team_gco_project_ServiceAccount.json \
+kubectl create secret generic artifactory-gcp-creds  --from-file="gcp.credentials.json=/Users/sureshv/.gcp/support-team_gco_project_ServiceAccount.json" \
 -n $JFROG_PLATFORM_NAMESPACE
 
 envsubst < binarystore_config/custom-binarystore-gcp.tmpl > binarystore_config/custom-binarystore.yaml
@@ -469,7 +469,37 @@ router frontend metadata onemodel event jfconnect access topology observability 
 kubectl exec -it ps-jfrog-platform-release-artifactory-0 -c artifactory  -- cat /opt/jfrog/artifactory/var/etc/system.yaml
 kubectl exec -it ps-jfrog-platform-release-artifactory-0 -c artifactory  -- cat /opt/jfrog/artifactory/var/etc/security/master.key
 
+kubectl exec -it ps-jfrog-platform-release-artifactory-0 -c artifactory   -n $JFROG_PLATFORM_NAMESPACE -- cat /tmp/gcp.credentials.json
+
+kubectl exec -it ps-jfrog-platform-release-artifactory-0 -c artifactory   -n $JFROG_PLATFORM_NAMESPACE -- ls /opt/jfrog/artifactory/var/etc/artifactory
+kubectl exec -it ps-jfrog-platform-release-artifactory-0 -c artifactory   -n $JFROG_PLATFORM_NAMESPACE -- cat /opt/jfrog/artifactory/var/etc/artifactory/gcp.credentials.json
+kubectl exec -it ps-jfrog-platform-release-artifactory-0 -c artifactory   -n $JFROG_PLATFORM_NAMESPACE -- cat /opt/jfrog/artifactory/var/etc/artifactory/binarystore.xml
+kubectl exec -it ps-jfrog-platform-release-artifactory-0 -c artifactory   -n $JFROG_PLATFORM_NAMESPACE -- cat /opt/jfrog/artifactory/var/etc/artifactory/artifactory.cluster.license
+
+
+kubectl exec -it ps-jfrog-platform-release-artifactory-0 -c router -- bash 
+kubectl get secret artifactory-gcp-creds  -n $JFROG_PLATFORM_NAMESPACE -o json | jq '.data | map_values(@base64d)'
 ```
+**K8s Networking:**
+In my terrafrom setup of my k8s cluster (GKE in GCP) , I am using:
+**GCP Networking**
+vpc_cidr       = "10.0.0.0/16"
+pods_cidr      = "10.1.0.0/16"
+services_cidr  = "10.2.0.0/16"
+Check Pod’s Host IP via Downward API (Kubernetes-native way):
+```
+kubectl get pod ps-jfrog-platform-release-artifactory-0  -n $JFROG_PLATFORM_NAMESPACE -o jsonpath='{.status.hostIP}'
+Output: 10.0.0.20 --> This is from the vpc_cidr
+```
+Artifactory router container:
+``
+kubectl exec -it ps-jfrog-platform-release-artifactory-0   -n $JFROG_PLATFORM_NAMESPACE  -c router -- hostname -i
+Output: 10.1.3.3 --> This is from the pods_cidr
+
+kubectl exec -it ps-jfrog-platform-release-artifactory-0   -n $JFROG_PLATFORM_NAMESPACE  -c router -- cat /etc/hosts
+``
+
+
 ---
 **Optional Steps:**
 - Set the Artifactory base url using the output you see from below in the `http://$SERVICE_HOSTNAME/ui/admin/configuration/general`:
@@ -599,15 +629,24 @@ helm  upgrade --install $JFROG_PLATFORM_NAME \
 --version "${JFROG_PLATFORM_CHART_VERSION}" 
 ```
 
-You can  tail the Artifactory's access log to see that Xray connects to Access service:
+You can tail the Artifactory's access log to see that Xray connects to Access service:
 ```
 kubectl logs -f ps-jfrog-platform-release-artifactory-0 -c access -n $JFROG_PLATFORM_NAMESPACE
 ```
+Xray router container connects to the Artifactory's access service via the ClusterIP service `ps-jfrog-platform-release-artifactory` port 8082 as mentioned in the `global.jfrogUrl` and then the access service sends the token 
+in the response via `shared.node.ip`  in the [Xray System YAML](https://jfrog.com/help/r/jfrog-installation-setup-documentation/xray-system-yaml)  which is 10.1.2.16 in below example
+``
+kubectl exec -it ps-jfrog-platform-release-xray-0  -n $JFROG_PLATFORM_NAMESPACE  -c router -- hostname -i
+10.1.2.16 --> This is from the pods_cidr. 
+```
+
 You should find the log entries similar to the following:
 ```
 2025-04-21T05:19:42.084Z [jfac ] [INFO ] [5045b8a5b8ff60fd] [.j.a.s.s.r.JoinServiceImpl:109] [27.0.0.1-8040-exec-6] - Router join request: using external topology so skipping router NodeId and IP validation
 2025-04-21T05:19:42.101Z [jfac ] [INFO ] [5045b8a5b8ff60fd] [.r.ServiceTokenProviderImpl:89] [27.0.0.1-8040-exec-6] - Cluster join: Successfully joined jfrou@01jsbckda0wv9paf2k746h0xp9 with node id ps-jfrog-platform-release-xray-0
 ```
+
+
 
 #### f) Troubleshoot Xray setup:
 ```
