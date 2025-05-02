@@ -479,6 +479,7 @@ kubectl exec -it ps-jfrog-platform-release-artifactory-0 -c artifactory   -n $JF
 
 kubectl exec -it ps-jfrog-platform-release-artifactory-0 -c router -- bash 
 kubectl get secret artifactory-gcp-creds  -n $JFROG_PLATFORM_NAMESPACE -o json | jq '.data | map_values(@base64d)'
+kubectl get secret ps-jfrog-platform-release-artifactory-unified-secret -o jsonpath="{.data.system\.yaml}" | base64 -d
 ```
 **K8s Networking:**
 
@@ -679,7 +680,21 @@ kubectl exec -it ps-jfrog-platform-release-rabbitmq-0 -n $JFROG_PLATFORM_NAMESPA
 
 kubectl delete pod ps-jfrog-platform-release-xray-0 ps-jfrog-platform-release-xray-1 \
 ps-jfrog-platform-release-xray-pre-upgrade-hook-5fqhr -n $JFROG_PLATFORM_NAMESPACE
+```
+Tail logs to verify Xray router startup
+```
 
+kubectl logs -f ps-jfrog-platform-release-xray-0 -c router -n $JFROG_PLATFORM_NAMESPACE  &
+kubectl logs -f ps-jfrog-platform-release-artifactory-0 -c access  -n $JFROG_PLATFORM_NAMESPACE &
+wait
+
+```
+Cleanup : Delete all secrets except "cloudsql-proxy-key" secret:
+```
+kubectl get secrets -n ps-jfrog-platform \
+  --no-headers \
+  | awk '$1 != "cloudsql-proxy-key" {print $1}' \
+  | xargs -r kubectl delete secret -n ps-jfrog-platform
 ```
 **Verify rabbitMQ and Xray:**
 
