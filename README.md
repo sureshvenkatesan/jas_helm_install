@@ -957,7 +957,7 @@ shared:
             level: info
 ``` 
 #### d) Render the "Package Catalog" menu in UI
-Access the "Package Catalog" menu in the UI directly by navigating to http://<jfrogUrl>:<port>/ui/catalog/packages/overview, without needing to use an incognito browser window.
+Access the "Package Catalog" menu in the UI directly by navigating to `http://<jfrogUrl>:<port>/ui/catalog/packages/overview` , without needing to use an incognito browser window.
 
 
 #### e) Check the Catalog health 
