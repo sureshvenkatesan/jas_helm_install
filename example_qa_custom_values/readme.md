@@ -310,4 +310,41 @@ curl -u admin -XDELETE https://<jfrogurl>/artifactory/api/system/licenses?licens
 The install new licenses using:
 https://jfrog.com/help/r/jfrog-rest-apis/install-ha-cluster-licenses
 
+---
+## Accessing Artifactory Service Across Namespaces in Kubernetes
+
+To access an Artifactory service running in a **different namespace** within a Kubernetes cluster using `curl`, you must use the **fully qualified domain name (FQDN)** of the service. Kubernetes automatically provides DNS entries for internal service discovery.
+
+### 📌 Service FQDN Format
+
+The typical format for a service's FQDN in Kubernetes is:
+
+```
+<service-name>.<namespace>.svc.cluster.local
+```
+
+To `curl` the Artifactory system ping endpoint:
+
+```
+curl http://<artifactory-service-name>.<namespace>.svc.cluster.local:8082/artifactory/api/system/ping
+```
+
+### 🔍 Example Scenario
+
+Assume the following:
+
+- The service name is `my-service`
+- It's deployed in the `other-namespace`
+- It exposes HTTP traffic on port `8082`
+
+To test the service from **another pod within the cluster**, run:
+
+```
+curl http://my-service.other-namespace.svc.cluster.local:8082/artifactory/api/system/ping
+```
+
+This command should return a `OK` response  with a 200 HTTP status code if the Artifactory service is healthy and reachable.
+
+---
+
 

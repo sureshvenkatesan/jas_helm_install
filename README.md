@@ -158,7 +158,8 @@ Install `envsubst` as per https://skofgar.ch/dev/2020/08/how-to-quickly-replace-
 brew install gettext
 ```
 As mentioned in [JFrog Platform Helm Chart Installation Steps](https://jfrog.com/help/r/jfrog-installation-setup-documentation/jfrog-platform-helm-chart-installation-steps):
-Add the JFrog Helm Charts repository to your Helm client.
+
+Add the JFrog Helm Charts repository to your Helm client and get the latest updates.
 
 ```
 helm repo add jfrog https://charts.jfrog.io
@@ -166,7 +167,7 @@ helm repo update
 
 ```
 
-#### How do I find the jfrog/platform char version that will be used ?
+#### How do I find the latest version of charts that will be used ?
 ```
 helm search repo jfrog/jfrog-platform --versions |  head -n 2
 helm search repo jfrog/artifactory --versions |  head -n 2
@@ -1166,3 +1167,47 @@ This will produce a file named `artifactory-107.84.14.tgz`.
    ```
 
 By following these steps, you should be able to download and install the specified version of the Helm chart in your air-gapped environment. 
+
+---
+
+When using Artifactory Edges for **Distribution** usecase , you have to setup Circle of trust between Artifactory and Edges.
+
+How to setup Circle of trust ?
+The steps are in [How to Establish a Circle of Trust](https://jfrog.com/help/r/jfrog-platform-administration-documentation/how-to-establish-a-circle-of-trust) .
+
+The service's root certificate can be acquired in the following ways:
+
+- found under
+$JFROG_HOME/artifactory/var/etc/access/keys/root.crt
+(requires physical access to the server)
+
+- by calling the [Get Root Certificate](https://jfrog.com/help/r/jfrog-platform-rest-apis/get-root-certificate) REST API
+
+Create the K8s secret with the edge root cert  and use it for your artifactory helm values:
+
+```
+kubectl create secret generic edge-root-crt --from-file=./edge-root.crt
+```
+Values when using `jfrog/artifactory` chart:
+```
+artifactory:
+  circleOfTrustCertificatesSecret: edge-root-crt
+```
+Values when using `jfrog/jfrog-platform` chart:
+```
+artifactory:
+  artifactory:
+    circleOfTrustCertificatesSecret: edge-root-crt
+```
+Simialrly do the same with the artifactory root cert and use it for your edge helm values. 
+
+---
+
+How to get the Artifactory Server Certificate ?
+
+If the artifactory server is example.jfrog.io
+```
+openssl s_client -connect example.jfrog.io:443 -showcerts < /dev/null
+```
+
+---
