@@ -111,7 +111,7 @@ START
  │       kubectl -n ps-jfrog-platform create secret generic artifactory-license \
  │         --from-file==artifactory.lic=/Users/sureshv/Documents/Test_Scripts/helm_upgrade/licenses/art.lic
  │
- ├── ⑥ Prepare Helm values.yaml
+ ├── ⑥ Prepare Helm values.yaml (IRSA + S3 filestore)
  │       - Use the correct serviceAccount name (matches above)
  │       - Annotate with IAM role ARN
  │
@@ -133,6 +133,8 @@ START
  │               # in order to not specify identity and credential fields
  │               useInstanceCredentials: true
  │               testConnection: true
+ │
+ ├── ⑥a Configure ALB via Ingress in values.yaml 
  │
  ├── ⑦ Create IAM + IRSA for AWS Load Balancer Controller
  │       curl -O https://raw.githubusercontent.com/kubernetes-sigs/aws-load-balancer-controller/v2.6.2/docs/install/iam_policy.json
@@ -159,10 +161,12 @@ START
  ├── ⑨ Add JFrog Helm repo
  │       helm repo add jfrog https://charts.jfrog.io
  │       helm repo update
- │── ⑨ Add JFrog Helm repo
-
-
- ├── ⑩ Install JFrog Platform
+ │   
+ │ 
+ │ 
+ ├── ⑩ Install JFrog Platform (uses the ingress to create ALB - See "Step 3: Configure the JFrog Platform Helm Chart" in blog 
+ │       https://jfrog.com/blog/install-artifactory-on-eks/
+ │ 
  │       helm upgrade --install jfrog-platform jfrog/jfrog-platform \
  │         -n ps-jfrog-platform -f values.yaml
  │
@@ -266,12 +270,15 @@ global:
 artifactory:
   serviceAccount:
     create: true
-    name: {JFROG_PLATFORM_NAMESPACE}:{JFROG_PLATFORM_NAME}-artifactory
+    # name: {JFROG_PLATFORM_NAMESPACE}:{JFROG_PLATFORM_NAME}-artifactory
     annotations:
       eks.amazonaws.com/role-arn: arn:aws:iam::<ACCOUNT_ID>:role/ArtifactoryS3Role
     automountServiceAccountToken: true
 
   artifactory:
+    license:
+      secret: artifactory-license
+      dataKey: artifactory.lic
     persistence:
       type: s3-storage-v3-direct
       awsS3V3:
@@ -283,12 +290,19 @@ artifactory:
 
   ingress:
     enabled: true
+    routerPath: /
+    artifactoryPath: /artifactory/
+    className: alb
     annotations:
-      kubernetes.io/ingress.class: alb
       alb.ingress.kubernetes.io/scheme: internet-facing
-      alb.ingress.kubernetes.io/certificate-arn: arn:aws:acm:eu-west-3:<ACCOUNT_ID>:certificate/<CERT_ID>
-    hosts:
-      - artifactory.example.com
+      alb.ingress.kubernetes.io/target-type: ip
+      alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}, {"HTTPS":443}]'
+      alb.ingress.kubernetes.io/ssl-redirect: '443'
+      alb.ingress.kubernetes.io/ssl-policy: ELBSecurityPolicy-2016-08
+      # name of the future ALB
+      alb.ingress.kubernetes.io/load-balancer-name: yann-demo-lab-eks
+      # consume the TLS certificates in AWS Cert Manager
+      alb.ingress.kubernetes.io/certificate-arn: arn:aws:acm:<AWS_REGION>:<AWS_ACCOUNT_ID>:certificate/<CERT_ID>
 ```
 
 ---
