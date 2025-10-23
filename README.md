@@ -26,124 +26,8 @@ Note: You can parse the https://github.com/jfrog/charts/blob/master/stable/jfrog
 
 ---
 ## Deploying in AWS EKS
-When using AWS EKS  please review the blog - [A Guide to Installing the JFrog Platform on Amazon EKS](https://jfrog.com/blog/install-artifactory-on-eks/)
-, that outlines the  prerequisites and steps required to install and configure the JFrog Platform in Amazon EKS,
-including setting up two AWS systems:
-- IAM Roles for Service Accounts (IRSA) and
-- Application Load Balancer (ALB).
 
-There are some typos in that blog :
- For example , in "Step 1: Set up the IRSA" section the "Example configuration that you can apply to your OIDC 
-connector" used the following which is not correct.
-```text
-"oidc.eks..amazonaws.com/id/:sub": "system:serviceaccount::artifactory"
-```
-
-**Here are the steps:**
-
-1. Create an IAM role that the Artifactory's pods service account can take on, equipped with a policy that bestows upon 
-them the privileges to list,  read from and write i.e the `"Action": "s3:*"` to the 'davidro-binstore' S3 bucket. 
-This bucket is intended to serve as the filestore for Artifactory.
-
-Here is an example  policy:
-```text
-{
-    "Version": "2012-10-17",
-    "Statement": [
-        {
-            "Sid": "AllowAllOnFilestoreBucket",
-            "Effect": "Allow",
-            "Action": "s3:*",
-            "Resource": ["arn:aws:s3:::davidro-binstore","arn:aws:s3:::davidro-binstore/*"]
-        }
-    ]
-}
-```
-2. "Subsequently, configure the cluster OIDC provider as the source of IAM identity, if necessary. Detailed instructions can be found in the following documentation:
-
-- [Enabling IAM Roles for Service Accounts on Amazon EKS](https://docs.aws.amazon.com/eks/latest/userguide/enable-iam-roles-for-service-accounts.html)
-- [Associating a Service Account with a Role on Amazon EKS](https://docs.aws.amazon.com/eks/latest/userguide/associate-service-account-role.html)
-
-Once these steps are completed, you must establish the OIDC provider as a trusted identity for the IAM role authorized to access the filestore bucket."
-
-
-The trusted identity JSON statement should be similar to this one below
-```text
-{
-    "Version": "2012-10-17",
-    "Statement": [
-        {
-            "Effect": "Allow",
-            "Principal": {
-                "Federated": "arn:aws:iam::912345675:oidc-provider/oidc.eks.eu-west-3.amazonaws.com/id/123456AC6C4D61425521234561E34"
-            },
-            "Action": "sts:AssumeRoleWithWebIdentity",
-            "Condition": {
-                "StringEquals": {
-                    "oidc.eks.eu-west-3.amazonaws.com/id/123456AC6C4D61425521234561E34:sub": "system:serviceaccount:JFROG_PLATFORM_NAMESPACE:JFROG_PLATFORM_NAME-artifactory",
-                    "oidc.eks.eu-west-3.amazonaws.com/id/123456AC6C4D61425521234561E34:aud": "sts.amazonaws.com"
-                }
-            }
-        }
-    ]
-}
-```
-Please note that the service account's name in the statement must correspond with the service account that will be 
-established for the Artifactory pods. By default, this service account takes the format of {JFROG_PLATFORM_NAMESPACE}:{JFROG_PLATFORM_NAME}-artifactory in its naming.
-
-For example in your K8s cluster if  you have:
-```text
-export JFROG_PLATFORM_NAMESPACE=ps-jfrog-platform
-export JFROG_PLATFORM_NAME=ps-jfrog-platform-release
-```
-
-Then the service account takes the format:
-`"system:serviceaccount:ps-jfrog-platform:ps-jfrog-platform-release-artifactory"`
-
-### Application Load Balancer as Ingress gateway setup
-You can refer to either of these resources for guidance:
-- The documentation available at: https://docs.aws.amazon.com/eks/latest/userguide/aws-load-balancer-controller.html
-- Alternatively, you can also explore: https://kubernetes-sigs.github.io/aws-load-balancer-controller/v2.2/deploy/installation/
-
-Main steps are highlighted below
-
-1. Create IAM policy for the load balancer .  This step is required only if the policy doesn't already exists.
-```text
-curl -o iam-policy.json https://raw.githubusercontent.com/kubernetes-sigs/aws-load-balancer-controller/v2.2.1/docs/install/iam_policy.json
-aws iam create-policy \
-    --policy-name ALBControllerIAMPolicy \
-    --policy-document file://iam-policy.json
-```
-2. use eksctl to create a kubernetes service account in kube-system namespace that will be able to
-```text
-eksctl create iamserviceaccount \
---cluster=davidroemeademocluster04C94C95-17b0370933c844e792601f7998cae6bf \
---name=alb-controller \ 
---attach-policy-arn=arn:aws:iam::925310216015:policy/ALBControllerIAMPolicy \
---override-existing-serviceaccounts \
---namespace=kube-system \
---approve
-```
-Please be aware that if you encounter difficulties, especially if your cluster was established using Infrastructure as Code (IAC) such as CDK, you might need to follow [this guide](https://docs.aws.amazon.com/eks/latest/userguide/troubleshooting_iam.html#security-iam-troubleshoot-cannot-view-nodes-or-workloads) to gain the necessary privileges for manually executing the equivalent actions of the aforementioned eksctl command within your cluster.
-
-If you find yourself in a situation where you need to manually create the kube-system role, you can utilize the information provided in this guide: [Link](https://stackoverflow.com/questions/65934606/what-does-eksctl-create-iamserviceaccount-do-under-the-hood-on-an-eks-cluster).
-
-Once the service account intended for use by the alb-ingress-controller pod is established and associated with an IAM role, the next step is to install the helm chart of the alb ingress controller within your EKS cluster's kube-system namespace.
-
-```text
-kubectl apply -k "github.com/aws/eks-charts/stable/aws-load-balancer-controller//crds?ref=master"
-
-helm repo add eks https://aws.github.io/eks-charts
-
-helm install aws-load-balancer-controller \
-    --set clusterName=davidroemeademocluster04C94C95-17b0370933c844e792601f7998cae6bf \
-    --set serviceAccount.create=false \
-    --set serviceAccount.name=alb-ingress-controller \
-    --set ingress-class=alb \
-    -n kube-system \
-    eks/aws-load-balancer-controller
-
-```
+Please review the steps in [Deploying_in_AWS_EKS.md](Deploying_in_AWS_EKS.md)
 
 Once your cluster is all enabled, you can install the Jfrog platform using values.yaml that can be generated as explained in next section.
 
@@ -400,6 +284,8 @@ kubectl delete secret  artifactory-gcp-creds -n $JFROG_PLATFORM_NAMESPACE
 
 kubectl create secret generic artifactory-gcp-creds  --from-file="gcp.credentials.json=/Users/sureshv/.gcp/support-team_gco_project_ServiceAccount.json" \
 -n $JFROG_PLATFORM_NAMESPACE
+
+cd values/For_PROD_Setup
 
 envsubst < binarystore_config/custom-binarystore-gcp.tmpl > binarystore_config/custom-binarystore.yaml
 
