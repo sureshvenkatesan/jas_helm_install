@@ -1,14 +1,52 @@
 ### 1. Create the secrets
-Review  the secrets in [secrets.yaml](secrets.yaml)
+- Review  the secrets in [secrets.tmpl](secrets.tmpl)
 
-Review the environment variables to use in the secrets and the values yaml in [ps-lab-setup.env](ps-lab-setup.env)
+- Review the environment variables to use in the secrets and the values tmpl in [ps-lab-setup.env](ps-lab-setup.env)
 
-Create the environment variables to use in the secrets and the values yaml
+- Create the environment variables .
 
-Create the secrets in [secrets.yaml](secrets.yaml)
+- Use the [`envsubst`](https://www.gnu.org/software/gettext/manual/html_node/envsubst-Invocation.html) command to populate secrets from environment variables in the secrets and values template files.
 
 **Note:** You can create the S3 binarystore configuration either as as a secret or directly in the 
-[ps-lab-setup-with-s3-storage.yaml](ps-lab-setup-with-s3-storage.yaml)
+[ps-lab-setup-with-s3-storage.tmpl](ps-lab-setup-with-s3-storage.tmpl)
+
+```
+envsubst < secrets.tmpl > temp/secrets.yaml
+envsubst < ps-lab-setup-with-s3-storage.tmpl > temp/ps-lab-setup-with-s3-storage.yaml
+```
+
+Create the secrets using temp/secrets.yaml  
+```
+kubectl apply -f  temp/secrets.yaml
+```
+Deploy the JFrog platform helm chart with your custom values in temp/secrets.yaml simailar to 
+https://github.com/jfrog/charts/blob/master/examples/terraform/jfrog-platform-aws-install/README.md#install-jfrog-platform:
+
+```
+helm repo add jfrog https://charts.jfrog.io
+helm repo update
+```
+Find the latest JFrog Platform chart version
+```
+helm search repo jfrog/jfrog-platform --versions |  head -n 2
+```
+
+Use the custom T-shirt size from https://github.com/jfrog/charts/blob/master/stable/jfrog-platform/sizing/
+
+Use the `rabbitmq HA Quorum` configuration from https://github.com/jfrog/charts/blob/master/stable/xray/rabbitmq/ha-quorum.yaml
+and `rabbitmq` configuration from  https://github.com/jfrog/charts/blob/master/stable/xray/sizing/xray-large.yaml
+
+```
+helm upgrade --install jfrog jfrog/jfrog-platform \
+  --version "${JFROG_PLATFORM_CHART_VERSION}"   \
+  --namespace $JFROG_PLATFORM_NAMESPACE --create-namespace \
+  -f ./jfrog-platform/sizing/platform-<sizing>-.yaml \
+  -f temp/ps-lab-setup-with-s3-storage.yaml \
+  --timeout 600s
+```
+
+
+
 
 
 If you are using ALB then configure the ALB in the `artifactory.ingress` as mentioned in 

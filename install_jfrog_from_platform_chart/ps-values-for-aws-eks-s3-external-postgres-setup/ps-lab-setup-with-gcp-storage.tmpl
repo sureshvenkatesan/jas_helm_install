@@ -109,6 +109,31 @@ rabbitmq:
     username: admin
     erlangCookie: secretcookie
     existingPasswordSecret: ${XRAY_RM_SECRET_NAME}
+  extraConfiguration: |-
+    vm_memory_high_watermark.absolute = 3G
+    {{- if not .Values.global.xray.rabbitmq.haQuorum.enabled }}
+    raft.wal_max_size_bytes = 1048576
+    {{- end }}
+  resources:
+    requests:
+      cpu: "200m"
+      memory: 500Mi
+    limits:
+      # cpu: "2"
+      memory: 4Gi
+  affinity:
+    podAntiAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        - labelSelector:
+            matchExpressions:
+              - key: app
+                operator: In
+                values:
+                  - xray
+          topologyKey: kubernetes.io/hostname
+  replicaCount: 3
+  podManagementPolicy: Parallel
+
 catalog:
   enabled: true
   replicaCount: 1
