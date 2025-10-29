@@ -1,3 +1,11 @@
+global:
+  versions:
+    artifactory: ${GLOBAL_RT_VERSION}
+    xray: ${XRAY_VERSION}
+  database:
+    initDBCreation: false
+  imageRegistry: releases-docker.jfrog.io
+  jfrogUrl: '{{ include "jfrog-platform.jfrogUrl" . }}'
 artifactory:
   artifactory:
     license:
@@ -8,21 +16,37 @@ artifactory:
     migration:
       enabled: true
     persistence:
-      size: ${STORAGE_PERSISTENCE_SIZE}
-      customBinarystoreXmlSecret: ${BINARYSTOREXML_SECRET_NAME}
-      googleStorage:
-        gcpServiceAccount:
-          enabled: true
-          customSecretName: ${ARTIFACTORY_GCP_CREDS}
-    customVolumes: |
-      - name: artifactory-gcp-creds
-        secret:
-          secretName: "${ARTIFACTORY_GCP_CREDS}" # artifactory-gcp-creds
-    customVolumeMounts: |
-      - name: artifactory-gcp-creds
-        mountPath: "/tmp/gcp.credentials.json"
-        subPath: gcp.credentials.json
-    preStartCommand: cp -fv /tmp/gcp.credentials.json {{ .Values.artifactory.persistence.mountPath }}/etc/artifactory/gcp.credentials.json
+      # size: ${STORAGE_PERSISTENCE_SIZE}
+      # customBinarystoreXmlSecret: ${BINARYSTOREXML_SECRET_NAME}
+      type: s3-storage-v3-direct
+      ## For artifactory.persistence.type aws-s3-v3, s3-storage-v3-direct, cluster-s3-storage-v3, s3-storage-v3-archive
+      awsS3V3:
+        testConnection: false
+        identity:
+        credential:
+        region: "${AWS_DEFAULT_REGION}"
+        bucketName: "${AWS_S3_BUCKET_NAME}"
+        path: artifactory/filestore
+        # endpoint: "${AWS_ENDPOINT_URL}"
+        port:
+        useHttp:
+        maxConnections: 200
+        connectionTimeout: 120000
+        socketTimeout: 240000
+        kmsServerSideEncryptionKeyId:
+        kmsKeyRegion:
+        kmsCryptoMode:
+        useInstanceCredentials: true
+        usePresigning: false
+        signatureExpirySeconds: 300
+        signedUrlExpirySeconds: 30
+        cloudFrontDomainName:
+        cloudFrontKeyPairId:
+        cloudFrontPrivateKey:
+        enableSignedUrlRedirect: false
+        enablePathStyleAccess: false
+        multiPartLimit:
+        multipartElementSize:
     admin:
       secret: ${RT_ADMIN_SECRET_NAME}
       dataKey: bootstrap.creds
@@ -54,14 +78,7 @@ pipelines:
   enabled: false
 pdnServer:
   enabled: false
-global:
-  versions:
-    artifactory: ${GLOBAL_RT_VERSION}
-    xray: ${XRAY_VERSION}
-  database:
-    initDBCreation: false
-  imageRegistry: releases-docker.jfrog.io
-  jfrogUrl: '{{ include "jfrog-platform.jfrogUrl" . }}'
+
 postgresql:
   enabled: false
 xray:
