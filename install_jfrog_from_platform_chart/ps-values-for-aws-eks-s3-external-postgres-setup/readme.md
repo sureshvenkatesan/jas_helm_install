@@ -1,3 +1,14 @@
+# JFrog Platform (Large) – Setup (Artifactory, Xray, Curation/Catalog, no JAS)
+
+Please review [JFrog Platform Reference Architecture](https://jfrog.com/help/r/jfrog-platform-reference-architecture/jfrog-platform-reference-architecture) .
+
+This repo contains two templates:
+
+- [secrets.tmpl](secrets.tmpl) – all required Kubernetes Secrets  
+- [ps-lab-setup-with-s3-storage-no-jas.tmpl](ps-lab-setup-with-s3-storage-no-jas.tmpl) – minimal custom Helm values for a large t-shirt size  deployment of **Artifactory + Xray + Curation/Catalog** (no Advanced Security/JAS)
+
+The steps below show how to fill in the templates, render them, and deploy.
+
 ### 1. Create the secrets
 - Review  the secrets in [secrets.tmpl](secrets.tmpl)
 
