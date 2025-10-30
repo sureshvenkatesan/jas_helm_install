@@ -8,11 +8,11 @@
 - Use the [`envsubst`](https://www.gnu.org/software/gettext/manual/html_node/envsubst-Invocation.html) command to populate secrets from environment variables in the secrets and values template files.
 
 **Note:** You can create the S3 binarystore configuration either as as a secret or directly in the 
-[ps-lab-setup-with-s3-storage.tmpl](ps-lab-setup-with-s3-storage.tmpl)
+[ps-lab-setup-with-s3-storage-no-jas.tmpl](ps-lab-setup-with-s3-storage-no-jas.tmpl)
 
 ```
 envsubst < secrets.tmpl > temp/secrets.yaml
-envsubst < ps-lab-setup-with-s3-storage.tmpl > temp/ps-lab-setup-with-s3-storage.yaml
+envsubst < ps-lab-setup-with-s3-storage-no-jas.tmpl > temp/ps-lab-setup-with-s3-storage-no-jas.yaml
 ```
 
 Create the secrets using temp/secrets.yaml  
@@ -59,7 +59,7 @@ helm upgrade --install jfrog jfrog/jfrog-platform \
   --version "${JFROG_PLATFORM_CHART_VERSION}"   \
   --namespace $JFROG_PLATFORM_NAMESPACE --create-namespace \
   -f ./jfrog-platform/sizing/platform-<sizing>-.yaml \
-  -f temp/ps-lab-setup-with-s3-storage.yaml \
+  -f temp/ps-lab-setup-with-s3-storage-no-jas.yaml \
   --timeout 600s
 ```
 

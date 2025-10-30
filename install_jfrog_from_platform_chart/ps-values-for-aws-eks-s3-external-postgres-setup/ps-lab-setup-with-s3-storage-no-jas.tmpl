@@ -108,17 +108,17 @@ xray:
         key: db-url
   common:
     persistence:
-      size: 100Gi
+      size: 200Gi
     extraEnvVars: |
       - name: "JF_SHARED_RABBITMQ_VHOST"
         value: "xray"
-  serviceAccount:
-    create: true
-  rbac:
-    create: true
-  jas:
-    healthcheck:
-      enabled: true
+  # serviceAccount:
+  #   create: true
+  # rbac:
+  #   create: true
+  # jas:
+  #   healthcheck:
+  #     enabled: true
   global:
     masterKeySecretName: ${XRAY_MASTERKEY_SECRET_NAME}
     joinKeySecretName: ${RT_JOINKEY_SECRET_NAME}
