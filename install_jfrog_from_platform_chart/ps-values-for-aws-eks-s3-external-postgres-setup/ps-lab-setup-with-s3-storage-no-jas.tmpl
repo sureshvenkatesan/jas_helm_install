@@ -4,8 +4,11 @@ global:
     xray: ${XRAY_VERSION}
   database:
     initDBCreation: false
+  # imagePullSecrets:
+  #   - myRegistryKeySecretName
   imageRegistry: releases-docker.jfrog.io
   jfrogUrl: '{{ include "jfrog-platform.jfrogUrl" . }}'
+  jfrogUrlUI: "https://artifactory.example.com"
   xray:
     rabbitmq:
       replicaCount: 3

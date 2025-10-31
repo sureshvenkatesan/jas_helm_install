@@ -265,7 +265,8 @@ In a Dev Jfrog deployment you can Create an IAM role that the Artifactory's pods
 
 ```yaml
 global:
-  jfrogUrl: https://artifactory.example.com
+  jfrogUrl: '{{ include "jfrog-platform.jfrogUrl" . }}'
+  jfrogUrlUI: "https://artifactory.example.com"
 
 artifactory:
   serviceAccount:
