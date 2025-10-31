@@ -30,7 +30,7 @@ Note: You can parse the https://github.com/jfrog/charts/blob/master/stable/jfrog
 Please review :
 -  JFrog Supported [JFrog Platform Installation in AWS with Terraform](https://github.com/jfrog/charts/tree/master/examples/terraform/jfrog-platform-aws-install)
 
--  The steps in [Deploying_in_AWS_EKS.md](Deploying_in_AWS_EKS.md) for the **visual sequence (flowchart-style)** that shows **every step** needed to successfully install **JFrog Artifactory on EKS** using **IRSA + S3 + ALB**, with the **correct trust and permissions policies** and  where the artifactory service account naming rule fits in the flow.
+-  The steps in [Deploying_in_AWS_EKS.md](install_jfrog_from_platform_chart/ps-values-for-aws-eks-s3-external-postgres-setup/Deploying_in_AWS_EKS.md) for the **visual sequence (flowchart-style)** that shows **every step** needed to successfully install **JFrog Artifactory on EKS** using **IRSA + S3 + ALB**, with the **correct trust and permissions policies** and  where the artifactory service account naming rule fits in the flow.
 
 Once your cluster is all enabled, you can install the Jfrog platform using values.yaml that can be generated as explained in next section.
 
