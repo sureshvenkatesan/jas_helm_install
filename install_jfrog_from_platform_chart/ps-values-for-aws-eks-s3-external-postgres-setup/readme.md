@@ -45,6 +45,10 @@ the blog https://jfrog.com/blog/install-artifactory-on-eks/ ( See "Step 3: Confi
 The relevant Helm values section similar to the blog is in  
 [Deploying_in_AWS_EKS.md – values.yaml Artifactory Helm Config](./Deploying_in_AWS_EKS.md#-valuesyaml-artifactory-helm-config)
 
+Some relevant JFrog Doc links for Creds to access the S3 bucket  are in:
+- [ARTIFACTORY: Connect Artifactory to S3 Bucket with IAM Role](https://jfrog.com/help/r/active/artifactory-connect-artifactory-to-s3-bucket-with-iam-role)
+- [Configure Artifactory to Use S3 Storage](https://jfrog.com/help/r/jfrog-installation-setup-documentation/configure-artifactory-to-use-s3-storage)
+- [ARTIFACTORY: How to Configure an AWS S3 Object Store Using an IAM Role Instead of an IAM User](https://jfrog.com/help/r/artifactory-how-to-configure-an-aws-s3-object-store-using-an-iam-role-instead-of-an-iam-user)
 
 ---
 
