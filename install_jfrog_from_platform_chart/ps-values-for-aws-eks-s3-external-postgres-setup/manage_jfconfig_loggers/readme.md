@@ -56,7 +56,7 @@ The script will:
 4. Display the current content of `logback-include.xml`
 5. Show which loggers are present or missing
 
-**Script location:** `install_jfrog_from_platform_chart/ps-values-for-aws-eks-s3-external-postgres-setup/manage_jfconfig_loggers.sh`
+**Script location:** `install_jfrog_from_platform_chart/ps-values-for-aws-eks-s3-external-postgres-setup/manage_jfconfig_loggers/manage_jfconfig_loggers.sh`
 
 ### Viewing Container Logs
 
