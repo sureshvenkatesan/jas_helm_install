@@ -44,7 +44,7 @@ So replicator is not used for Distribution.
 
 - you can leave `jfrogURL` without configuration. The platform chart should be able to connect between the products. 
 It is used for internal communication, and it is not the related to the custom base url.
-- Fill in your own `imagePullSecrets` and `imageRegistry` in values/values-main.yaml
+- Fill in your own `imagePullSecrets` and `imageRegistry` in [values/values-main.yaml](values/values-main.yaml)
 -  Pass your own ca.crt for artifactory if needed for ssl configuration. 
 
 See prerequisite for ca.crt in  [Prerequisites for Custom TLS Certificate](https://jfrog.com/help/r/jfrog-installation-setup-documentation/prerequisites-for-custom-tls-certificate) 
@@ -145,6 +145,7 @@ Note: IMPORTANT: The file must be called `"gcp.credentials.json"` because this i
 kubectl create secret generic artifactory-gcp-creds --from-file=./gcp.credentials.json -n $MY_NAMESPACE
 ```
 **For GCP Storage:**
+([custom-binarystore-gcp.tmpl](../values/For_PROD_Setup/binarystore_config/custom-binarystore-gcp.tmpl))
 ```
 envsubst < ./custom-binarystore-gcp.tmpl > custom-binarystore.yaml
 
@@ -160,6 +161,7 @@ We recommend using the [S3 Direct Upload Template (Recommended)](https://jfrog.c
 Pick the Artifactory sizing configuration from https://github.com/jfrog/charts/blob/master/stable/artifactory/sizing
 
 I will use artifactory-small.yaml and artifactory-small-extra-config.yaml and nest it under "artifactory:"
+([nest_yaml_with_comments.py](../scripts/nest_yaml_with_comments.py))
 ```
 python ../nest_yaml_with_comments.py artifactory-small.yaml \
  artifactory -o nested-artifactory.yaml 
@@ -169,13 +171,14 @@ python ../nest_yaml_with_comments.py artifactory-small-extra-config.yaml \
 ```
 Pick the https://github.com/jfrog/charts/blob/master/stable/distribution/sizing/distribution-medium.yaml and  
 nest it under "distribution:"
-
+([nest_yaml_with_comments.py](../scripts/nest_yaml_with_comments.py))
 ```
 python ../nest_yaml_with_comments.py /Users/sureshv/myCode/github-jfrog/charts/stable/distribution/sizing/distribution-medium.yaml \
  distribution -o nested-distrubution.yaml
 ```
 
 Next merge all of them for Artifactory and Distribution:
+([merge_yaml_with_comments.py](../scripts/merge_yaml_with_comments.py), [values-main.yaml](values/values-main.yaml), [values-artifactory.yaml](values/values-artifactory.yaml))
 ```
 python ../merge_yaml_with_comments.py ../values/values-main.yaml \
 ../values/values-artifactory.yaml \
@@ -332,6 +335,7 @@ kubectl get secret masterkey-secret -o json -n $MY_NAMESPACE | jq -r '.data."art
 bash ./decode-secret.sh $MY_NAMESPACE masterkey-secret master-key
 
 ```
+([decode-secret.sh](../scripts/decode-secret.sh))
 
 ---
 To start over by deleting everything do the following:
